@@ -53,3 +53,5 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 TheCuratorsCircle/.idea/
+Backend/TheCuratorsCircle/.idea/
+Frontend/TheCuratorsCircle/.idea/
