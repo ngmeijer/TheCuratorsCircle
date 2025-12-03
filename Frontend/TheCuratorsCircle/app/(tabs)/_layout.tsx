@@ -5,15 +5,7 @@ export default function TabLayout(){
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: '#ffd33d',
-                headerStyle: {
-                    backgroundColor: '#25292e',
-                },
-                headerShadowVisible: false,
-                headerTintColor: '#78E0F0',
-                tabBarStyle: {
-                    backgroundColor: '#1E2D5E',
-                }
+                headerShown: false,
             }}>
             <Tabs.Screen name="index" options={{ title: 'For you',
             tabBarIcon: ({color, focused}) => (

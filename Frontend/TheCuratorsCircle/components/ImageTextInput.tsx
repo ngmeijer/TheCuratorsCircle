@@ -4,6 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 interface IconInputProps {
     placeholder: string;
+    placeholderColor: string;
     iconSource: any;
     iconSize: number;
     value?: string;
@@ -15,6 +16,7 @@ interface IconInputProps {
 
 export function ImageTextInput({
                                    placeholder,
+                                   placeholderColor,
                                    iconSource,
                                    iconSize,
                                    value,
@@ -29,6 +31,7 @@ export function ImageTextInput({
             <TextInput
                 style={inputStyle}
                 placeholder={placeholder}
+                placeholderTextColor={placeholderColor}
                 value={value}
                 onChangeText={onChangeText}
             />

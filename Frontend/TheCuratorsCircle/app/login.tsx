@@ -1,149 +1,125 @@
-﻿import {Text, View, StyleSheet, Button, Image, TextInput, Alert} from 'react-native';
+﻿import { Text, View, StyleSheet, Image, Pressable } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyledButton} from "@/components/StyledButton";
+import { StyledButton } from "@/components/StyledButton";
 import { ImageTextInput } from "@/components/ImageTextInput";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-export default function LoginScreen() {
+export default function Login() {
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Image
-                    style={styles.logo}
-                    source={require('../assets/images/android-icon-foreground.png')}
-                />
-                <Text style={styles.appTitle}>The Curator's Circle</Text>
-                <Text style={styles.appDescription}>Discover, collect, and share the entertainment that defines you.</Text>
-            </View>
-            <View style={styles.inputFields}>
-                <SafeAreaProvider>
-                    <SafeAreaView>
-                        <ImageTextInput
-                            placeholder="Email"
-                            iconSource="mail-outline"
-                            iconSize={18}
-                            containerStyle={styles.textinputContainer}
-                            inputStyle={styles.textinput}
-                            iconStyle={styles.textIcon}
+        <SafeAreaProvider>
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    {/* Clickable logo */}
+                    <Pressable
+                        onPress={() => console.log("Logo pressed")}
+                        style={styles.logoWrapper}
+                    >
+                        <Image
+                            source={require('../assets/images/logo.png')}
+                            style={styles.logo}
                         />
-                        <ImageTextInput
-                            placeholder="Password"
-                            iconSource="lock-closed-outline"
-                            iconSize={18}
-                            containerStyle={styles.textinputContainer}
-                            inputStyle={styles.textinput}
-                            iconStyle={styles.textIcon}
-                        />
-                    </SafeAreaView>
-                </SafeAreaProvider>
-            </View>
-            <StyledButton
-                style={styles.loginButton}
-                title="Log In"
-                onPress={() => console.log("Pressed log in")}
-            />
-            <StyledButton
-                style={styles.signupButton}
-                textStyle={{color: '#000'}}
-                title="Sign up"
-                onPress={() => console.log("Pressed sign up")}
-            />
-            <Text style={styles.signupHint}>Or continue with</Text>
-            <View style={styles.bigTechButtons}>
+                    </Pressable>
 
-            </View>
-            {/*<Button*/}
-            {/*    title="Register"*/}
-            {/*    onPress={() => Alert.alert('Simple Button pressed')}*/}
-            {/*/>*/}
-            {/*<Button*/}
-            {/*    title="Log in"*/}
-            {/*    onPress={() => Alert.alert('Simple Button pressed')}*/}
-            {/*/>*/}
-            {/*<Text style={styles.text}>Or continue with</Text>*/}
-            {/*<View style={styles.bigTechButtons}>*/}
-            {/*    <Button*/}
-            {/*        title="Google"*/}
-            {/*        onPress={() => Alert.alert('Simple Button pressed')}*/}
-            {/*    />*/}
-            {/*    <Button*/}
-            {/*        title="Apple"*/}
-            {/*        onPress={() => Alert.alert('Simple Button pressed')}*/}
-            {/*    />*/}
-            {/*</View>*/}
-        </View>
+                    <Text style={styles.appDescription}>
+                        Discover, collect, and share the entertainment that defines you.
+                    </Text>
+                </View>
+
+                <View style={styles.inputFields}>
+                    <ImageTextInput
+                        placeholder="Email"
+                        placeholderColor="#9ca3b6"
+                        iconSource="mail-outline"
+                        iconSize={18}
+                        containerStyle={styles.textinputContainer}
+                        inputStyle={styles.textinput}
+                        iconStyle={styles.textIcon}
+                    />
+                    <ImageTextInput
+                        placeholder="Password"
+                        placeholderColor="#9ca3b6"
+                        iconSource="lock-closed-outline"
+                        iconSize={18}
+                        containerStyle={styles.textinputContainer}
+                        inputStyle={styles.textinput}
+                        iconStyle={styles.textIcon}
+                    />
+                </View>
+
+                <StyledButton
+                    style={styles.loginButton}
+                    title="Log In"
+                    onPress={() => console.log("Pressed log in")}
+                />
+
+                <StyledButton
+                    style={styles.signupButton}
+                    textStyle={{ color: '#000' }}
+                    title="Sign up"
+                    onPress={() => console.log("Pressed sign up")}
+                />
+
+                <Text style={styles.signupHint}>Or continue with</Text>
+                <View style={{ flexDirection: 'row', gap: 16 }}>
+                    <Pressable style={styles.socialButton} onPress={() => console.log('Google')}>
+                        <Ionicons name="logo-google" size={28} />
+                    </Pressable>
+
+                    <Pressable style={styles.socialButton} onPress={() => console.log('Apple')}>
+                        <Ionicons name="logo-apple" size={28} />
+                    </Pressable>
+                </View>
+            </SafeAreaView>
+        </SafeAreaProvider>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 2,
+        flex: 1,
         backgroundColor: '#f7f7fa',
-        justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 24,
+        justifyContent: 'center',
     },
     header: {
-        flex:1,
         alignItems: 'center',
-        justifyContent: 'center',
+        marginBottom: 24,
     },
-    appTitle: {
-        color: '#0f1724',
-        flex: 1,
-        fontSize: 30,
-        fontWeight: 'bold',
+    logoWrapper: {
+        width: 200,
+        height: 150,
+        marginBottom: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    logo: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain',
     },
     appDescription: {
         color: '#98a0b3',
-        flex: 1,
         textAlign: 'center',
-        maxWidth: 280
-    },
-    logo: {
-        width: 120,
-        height: 120,
-        resizeMode: 'contain',
-        marginTop:30,
-        marginBottom:-20
-    },
-    signupHint: {
-        color: '#fff',
+        maxWidth: 280,
     },
     inputFields: {
         width: '100%',
-        flex: 1,
-    },
-    loginButton:{
-        margin:20,
-    },
-    signupButton:{
-        backgroundColor: 'transparent',
-    },
-    bigTechButtons: {
-        width: '100%',
-        flex: 1,
-    },
-    input: {
-        height: 40,
-        margin: 18,
-        paddingHorizontal: 10,
-        borderWidth: 0,
-        padding: 10,
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        color: '#b5bbc9'
+        alignItems: 'center',
+        marginBottom: 16,
     },
     textinputContainer: {
+        width: '100%',
+        maxWidth: 320,
+        height: 50,
+        marginVertical: 8,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 12,
         paddingHorizontal: 12,
         backgroundColor: '#fff',
-        height:50,
-        width:'80%',
-        marginVertical: 8,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 12,
     },
     textIcon: {
         marginRight: 8,
@@ -151,7 +127,49 @@ const styles = StyleSheet.create({
     textinput: {
         flex: 1,
         height: '100%',
-        color: '#fff',
-        fontSize: 26,
+        color: 'black',
+        fontSize: 16,
     },
+    loginButton: {
+        width: '100%',
+        maxWidth: 320,
+        marginTop: 12,
+    },
+    signupButton: {
+        width: '100%',
+        maxWidth: 320,
+        marginTop: 8,
+        backgroundColor: 'transparent',
+    },
+    signupHint: {
+        color: '#a2aaba',
+        marginTop: 16,
+    },
+    bigTechButtons: {
+        flexDirection: 'row',     // place buttons horizontally
+        justifyContent: 'center', // center them
+        gap: 16,                  // space between buttons
+        marginTop: 16,            // distance from signup/login buttons
+        width: '100%',
+        maxWidth: 320,
+    },
+
+    socialButton: {
+        width: 100,                 // or any fixed width
+        height: 50,
+        marginTop:10,// keep original height
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        justifyContent: 'center',  // centers the icon vertically
+        alignItems: 'center',      // centers the icon horizontally
+        borderWidth: 1,
+        borderColor: '#ccc',
+    },
+
+    socialButtonImage: {
+        fontSize: 16,
+        color: '#000',
+        fontWeight: 'bold',
+    },
+
 });
