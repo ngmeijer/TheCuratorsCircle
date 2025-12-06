@@ -12,9 +12,9 @@ export default function ForYouPage() {
             <View style={styles.header}>
                 <Text style={styles.logo}>For You</Text>
             </View>
-            <Pressable style={styles.profileButton} onPress={() => console.log('Google')}>
-                <Ionicons name="logo-google" size={28} />
-            </Pressable>
+            {/*<Pressable style={styles.profileButton} onPress={() => console.log('Google')}>*/}
+            {/*    <Ionicons name="logo-google" size={28} />*/}
+            {/*</Pressable>*/}
 
             <FlatList
                 data={posts}

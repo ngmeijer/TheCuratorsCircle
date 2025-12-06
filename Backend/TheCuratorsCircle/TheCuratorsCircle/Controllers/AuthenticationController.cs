@@ -1,33 +1,69 @@
 ﻿using System.Security.Claims;
+using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TheCuratorsCircle.Authentication;
+using TheCuratorsCircle.Models;
+using TheCuratorsCircle.Utilities;
 
 namespace TheCuratorsCircle.Controllers;
 
-[Authorize(AuthenticationSchemes = FirebaseAuthenticationDefaults.AuthenticationScheme)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("auth")]
 public class AuthenticationController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult Get()
-    {
-        // The authenticated user's ID (UID) is now available in the User principal.
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    private readonly FirebaseAuth _auth;
 
-        if (userId == null)
+    public AuthenticationController()
+    {
+        _auth = FirebaseAuth.DefaultInstance;
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
         {
-            // This should ideally never happen if the [Authorize] attribute worked.
-            return Unauthorized();
+            return BadRequest("Email and password are required.");
         }
 
-        // Returns the UID and a success message, confirming the end-to-end security works.
-        return Ok(new 
-        { 
-            message = "Authentication successful. You are authorized.",
-            uid = userId, 
-            email = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value
-        });
+        try
+        {
+            var firebaseToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
+
+            var jwt = JwtTokenGenerator.GenerateToken(request.Email);
+
+            return Ok(new
+            {
+                token = jwt
+            });
+        }
+        catch (Exception ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+    }
+
+    private async Task<string> VerifyCredentialsWithFirebase(string email, string password)
+    {
+        using var client = new HttpClient();
+
+        var payload = new
+        {
+            email,
+            password,
+            returnSecureToken = true
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=YOUR_API_KEY",
+            payload);
+
+        if (response.IsSuccessStatusCode)
+            throw new Exception("Invalid email or password");
+
+        var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+
+        return result["idToken"].ToString();
     }
 }

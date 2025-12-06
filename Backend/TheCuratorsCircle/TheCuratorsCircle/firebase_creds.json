@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "the-curator-s-circle",
+  "private_key_id": "9f61e396d16ae22aa1c1340e6cc3aa183ac37053",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDKEr+/nvNaxkxO\nr1Gf2re3QE1wn5cyGZUBchKAdKg9UstpcAYrspgnCurJanzhMv9+OhMZbJQGXI6W\nbNTiy5xVk1K9invwsiM/+ljHvTvGwsTSuYN1ruKa8+y2XKmSl+hT00sd1TwcAKjI\nKQdLm93tr0AaBheD9XQ7hKEUqUlkSynh57d8XnC16HUi0hreO7s0a4Ve0MyW5jOQ\nZdo/4s/6tRFPhtRoa4yjL9kjeadzecDP9HakhbnXUL/+nJxGqrD3oXJ7H1m7dFzg\nkerre59jqgCdFqf+s2x4T1URSztQwiK+lUthV9g4lYSIK+Oi7hiLGg//YYG5LEZI\n6c0qQ7K9AgMBAAECggEAECWO4lwsZGa/frMWIeCbeP5fob3y2is+o5KupUqNDfdh\nbx+nMpMvAsGl0KncaC9HyJmR4KBzNI3tS9pO6X9tEs52mFQqQqmtVOWndfBqSB/U\nk+UEeuEaVNjkY48EcsUGKLqTwELDbpZj5jiXD2TZRy6Pf/TYKLBylPXsXCcJyQRv\nC7jjz27H/u+F/ikCI7B5LztBqde0kH3fZg+vlQhBTrv8nacqnYSo/Ps328uYZuf/\nKUb/nsSm9M+/qqlavuwEXtVEGJvtn0DGhm1lsWyBZtXVGcOu+Yr6GnIef2zO0wcK\nxoFfDKf75gSfD3x/hi+ZGZuSeIfD4f431aDCgZFYOQKBgQD4PPjvQWrP4WeXeBLQ\nbXUfSb/l4833/x13ktwqMUPKRfo06MrOFBIeRzSYJVNTgwWybKiAwcRDa1O4ixbj\nIida2xDI3doPX1IiLNuu8iOdBYRZNMuyoU8J6YUCVSv6olpxB6PWoYz2frp4z3O4\ns9rM+W764z+bKs0wmo+TbEbP1QKBgQDQZD+Zo5kuhpRNIPCHLtxYP9sboc7VUQm4\nb+zec2f5Gzc7gDO+b0WL89I/OFNRMHxdB+j8Kq1V13DA/M2stlZSu81ei3zJ1OXI\nAdi3ilDLg5gPk8Mq+xxSKRkaxXG437AdetsjIkUwprQwvBPQm/0l/Zk8SVPaeAai\nnNWtxH8zSQKBgQDoiL0r6lyzFNPkWK9PHWm8gGpJYEcdy5X/38trnrCA92I1U+g+\neSCryknjR/uxXCfnBtAlpN1DxnMriOdMpz60Zkdn0iIlikY3C0xSqjJgMb3TjphN\n4btXbq+RCtXit1j/TofUU4rnkLj+2F3vpFMO9Y1Xaa64nLSPlglusNv4bQKBgE6T\n/odocPJiPLl4mjnfKab9LRmWQe+dxxSM37xht+ruoD0Hcnt0ab0EC1tbWc9bgQlz\nWh772LBttE6RBN0DRDmeJypnXn6ckKiCSb2rohubW1NEXGtwlJVGefjmSqNzdW0o\nTklJOt3FflyCDtayexpALe/VlpDigV3/1XLYjT5BAoGANGj01YCSiJPkCI3WgJKW\nBHScL0awBjpTC0U7AUbv44Liil1gEzh4wgADHTtDoY5D5GZWfLAjQ7hv8lOsaD/z\nQdKka124q4k94jD8HlVa6MtSurMTxZ6uY8o2XbmHZHKcdW5QtvxH2dXkmvRViRoi\ngmeAlUWoj8p96y3jbEdDOz4=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@the-curator-s-circle.iam.gserviceaccount.com",
+  "client_id": "118321133269595531093",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40the-curator-s-circle.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
