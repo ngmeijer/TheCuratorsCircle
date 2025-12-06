@@ -1,10 +1,27 @@
-﻿import { Text, View, StyleSheet, Image, Pressable } from 'react-native';
+﻿import {Text, View, StyleSheet, Image, Pressable, Alert} from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyledButton } from "@/components/StyledButton";
 import { ImageTextInput } from "@/components/ImageTextInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import {login} from "@/api/auth/auth";
+import {useState} from "react";
+import {router} from "expo-router";
 
 export default function Login() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    async function handleLogin() {
+        try {
+            const result = await login(email, password); // call backend
+            console.log("Logged in:", result);
+            router.push("/forYouPage")
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Login failed", "Please check your credentials");
+        }
+    }
+
     return (
         <SafeAreaProvider>
             <SafeAreaView style={styles.container}>
@@ -15,7 +32,7 @@ export default function Login() {
                         style={styles.logoWrapper}
                     >
                         <Image
-                            source={require('../assets/images/logo.png')}
+                            source={require('../assets/images/logo-test-3-resized.png')}
                             style={styles.logo}
                         />
                     </Pressable>
@@ -43,13 +60,14 @@ export default function Login() {
                         containerStyle={styles.textinputContainer}
                         inputStyle={styles.textinput}
                         iconStyle={styles.textIcon}
+                        secureText={true}
                     />
                 </View>
 
                 <StyledButton
                     style={styles.loginButton}
                     title="Log In"
-                    onPress={() => console.log("Pressed log in")}
+                    onPress={handleLogin}
                 />
 
                 <StyledButton
@@ -77,7 +95,7 @@ export default function Login() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f7f7fa',
+        backgroundColor: '#fcfafa',
         alignItems: 'center',
         paddingHorizontal: 24,
         justifyContent: 'center',
@@ -94,8 +112,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logo: {
-        width: '100%',
-        height: '100%',
+        width: '170%',
         resizeMode: 'contain',
     },
     appDescription: {

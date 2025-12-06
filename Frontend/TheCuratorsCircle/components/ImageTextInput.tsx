@@ -12,6 +12,7 @@ interface IconInputProps {
     containerStyle?: ViewStyle;
     inputStyle?: TextStyle;
     iconStyle?: ImageStyle;
+    secureText? : boolean
 }
 
 export function ImageTextInput({
@@ -24,6 +25,7 @@ export function ImageTextInput({
                                    containerStyle,
                                    inputStyle,
                                    iconStyle,
+                                   secureText = false,
                                }: IconInputProps) {
     return (
         <View style={containerStyle}>
@@ -34,6 +36,7 @@ export function ImageTextInput({
                 placeholderTextColor={placeholderColor}
                 value={value}
                 onChangeText={onChangeText}
+                secureTextEntry={secureText}
             />
         </View>
     );
