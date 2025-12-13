@@ -55,3 +55,4 @@ nunit-*.xml
 TheCuratorsCircle/.idea/
 Backend/TheCuratorsCircle/.idea/
 Frontend/TheCuratorsCircle/.idea/
+Backend/TheCuratorsCircle/TheCuratorsCircle/firebase_creds.json

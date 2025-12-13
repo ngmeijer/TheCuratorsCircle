@@ -9,20 +9,17 @@
         body: json,
     });
 
-    if(!response.ok) {
-        // Try to read error from backend
-        let errorMessage = response.statusText;
+    let data;
 
+    if(!response.ok) {
         try {
-            const errorBody = await response.json();
-            // Adjust depending on how your backend returns errors
-            errorMessage = errorBody?.message || JSON.stringify(errorBody);
+            data = await response.json();
         } catch {
             // Fallback if body is empty or not JSON
-            errorMessage = response.statusText || "Unknown error";
+            data = { message: "Unknown error."};
         }
 
-        throw new Error("Failed to login: " + errorMessage);
+        throw new Error(data.message);
     }
 
     return response.json();

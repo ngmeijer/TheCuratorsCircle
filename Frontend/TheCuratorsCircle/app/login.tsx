@@ -10,21 +10,23 @@ import {router} from "expo-router";
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     async function handleLogin() {
         if (!email || !password) {
-            Alert.alert("Missing information", "Please enter email and password");
+            setErrorMessage("Email and password cannot be empty.");
             return;
         }
 
         try {
+            setErrorMessage(null);
             console.log("Provided email: " + email + ", provided password: " + password);
             const result = await login(email, password); // call backend
             console.log("Logged in:", result);
             router.push("/forYouPage")
-        } catch (error) {
+        } catch (error : any) {
             console.error(error);
-            Alert.alert("Login failed", "Please check your credentials");
+            setErrorMessage(error.message || "Login failed");
         }
     }
 
@@ -71,6 +73,10 @@ export default function Login() {
                         onChangeText={setPassword}
                     />
                 </View>
+
+                <Text style={styles.errorText}>
+                    {errorMessage || " "}
+                </Text>
 
                 <StyledButton
                     style={styles.loginButton}
@@ -137,7 +143,7 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 320,
         height: 50,
-        marginVertical: 8,
+        marginVertical: 6,
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 12,
@@ -155,10 +161,16 @@ const styles = StyleSheet.create({
         color: 'black',
         fontSize: 16,
     },
+    errorText: {
+        top:-10,
+        color: 'red',
+        fontSize: 14,
+        textAlign: 'center',
+    },
     loginButton: {
         width: '100%',
         maxWidth: 320,
-        marginTop: 12,
+        marginTop: 0,
     },
     signupButton: {
         width: '100%',

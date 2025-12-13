@@ -24,12 +24,17 @@ public class AuthenticationController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ModelState);
+            return BadRequest(new { message = "Invalid data, and input fields cannot be empty."});
         }
 
         try
         {
             var firebaseToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
+
+            if (firebaseToken == null)
+            {
+                return BadRequest(new { message = "Invalid credentials."});
+            }
 
             var jwt = JwtTokenGenerator.GenerateToken(request.Email);
 
@@ -40,7 +45,7 @@ public class AuthenticationController : ControllerBase
         }
         catch (Exception ex)
         {
-            return Unauthorized(ex.Message);
+            return Unauthorized(new { message = ex.Message});
         }
     }
 
