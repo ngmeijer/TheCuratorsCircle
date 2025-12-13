@@ -20,11 +20,11 @@ public class AuthenticationController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+    public async Task<IActionResult> Login([FromBody]LoginRequest request)
     {
-        if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+        if (!ModelState.IsValid)
         {
-            return BadRequest("Email and password are required.");
+            return BadRequest(ModelState);
         }
 
         try
@@ -56,10 +56,10 @@ public class AuthenticationController : ControllerBase
         };
 
         var response = await client.PostAsJsonAsync(
-            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=YOUR_API_KEY",
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBwcToSEZCqHamHdGZx_gcXlQmXtzXDRDk",
             payload);
 
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
             throw new Exception("Invalid email or password");
 
         var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();

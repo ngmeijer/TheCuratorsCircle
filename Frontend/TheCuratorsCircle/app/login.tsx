@@ -12,7 +12,13 @@ export default function Login() {
     const [password, setPassword] = useState("");
 
     async function handleLogin() {
+        if (!email || !password) {
+            Alert.alert("Missing information", "Please enter email and password");
+            return;
+        }
+
         try {
+            console.log("Provided email: " + email + ", provided password: " + password);
             const result = await login(email, password); // call backend
             console.log("Logged in:", result);
             router.push("/forYouPage")
@@ -51,6 +57,7 @@ export default function Login() {
                         containerStyle={styles.textinputContainer}
                         inputStyle={styles.textinput}
                         iconStyle={styles.textIcon}
+                        onChangeText={setEmail}
                     />
                     <ImageTextInput
                         placeholder="Password"
@@ -61,6 +68,7 @@ export default function Login() {
                         inputStyle={styles.textinput}
                         iconStyle={styles.textIcon}
                         secureText={true}
+                        onChangeText={setPassword}
                     />
                 </View>
 

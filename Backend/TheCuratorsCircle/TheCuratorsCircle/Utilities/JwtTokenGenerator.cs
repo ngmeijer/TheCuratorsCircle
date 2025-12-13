@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
 
 namespace TheCuratorsCircle.Utilities;
@@ -9,8 +10,14 @@ public static class JwtTokenGenerator
 {
     public static string GenerateToken(string email)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(""));
-
+        var jsonText = File.ReadAllText(@"E:\Keystores\TheCuratorsCircle\credentials.json");
+        var jsonDoc = JsonDocument.Parse(jsonText);
+        
+        var secret = jsonDoc.RootElement.GetProperty("environmentVariables")
+            .GetProperty("JWT_SECRET")
+            .GetString();
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -19,7 +26,7 @@ public static class JwtTokenGenerator
         };
 
         var token = new JwtSecurityToken(
-            issuer: "",
+            issuer: "TCC",
             audience: "",
             claims: claims,
             expires: DateTime.UtcNow.AddDays(7),
