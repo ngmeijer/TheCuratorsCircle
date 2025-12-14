@@ -60,7 +60,7 @@ public class AuthenticationController : ControllerBase
 
         try
         {
-            var userRecord = await FirebaseAuth.DefaultInstance.CreateUserAsync(new UserRecordArgs(){Email = request.Email, Password = request.Password});
+            var userRecord = await _auth.CreateUserAsync(new UserRecordArgs(){Email = request.Email, Password = request.Password});
             
             var firebaseToken  = await VerifyCredentialsWithFirebase(request.Email, request.Password);
 
