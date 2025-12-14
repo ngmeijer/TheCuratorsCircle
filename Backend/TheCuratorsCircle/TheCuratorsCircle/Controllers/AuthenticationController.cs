@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using TheCuratorsCircle.Authentication;
 using TheCuratorsCircle.Models;
@@ -46,6 +47,42 @@ public class AuthenticationController : ControllerBase
         catch (Exception ex)
         {
             return Unauthorized(new { message = ex.Message});
+        }
+    }
+    
+    [HttpPost("signup")]
+    public async Task<IActionResult> Signup([FromBody]RegisterRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { message = "Invalid data, and input fields cannot be empty."});
+        }
+
+        try
+        {
+            var userRecord = await _auth.CreateUserAsync(new UserRecordArgs(){Email = request.Email, Password = request.Password});
+            
+            var firebaseToken  = await VerifyCredentialsWithFirebase(request.Email, request.Password);
+
+            if (firebaseToken == null)
+            {
+                return StatusCode(500, new {message = "Account created but failed to log in."});
+            }
+            
+            var jwt = JwtTokenGenerator.GenerateToken(request.Email);
+
+            return Ok(new
+            {
+                token = jwt
+            });
+        }
+        catch (FirebaseAuthException ex) when (ex.AuthErrorCode == AuthErrorCode.EmailAlreadyExists)
+        {
+            return Conflict(new { message = "Email already in use." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
         }
     }
 

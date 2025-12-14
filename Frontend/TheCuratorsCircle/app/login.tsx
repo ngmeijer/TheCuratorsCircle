@@ -4,6 +4,7 @@ import { StyledButton } from "@/components/StyledButton";
 import { ImageTextInput } from "@/components/ImageTextInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {login} from "@/api/auth/auth";
+import {signup} from "@/api/auth/auth";
 import {useState} from "react";
 import {router} from "expo-router";
 
@@ -27,6 +28,24 @@ export default function Login() {
         } catch (error : any) {
             console.error(error);
             setErrorMessage(error.message || "Login failed");
+        }
+    }
+
+    async function handleSignup(){
+        if (!email || !password) {
+            setErrorMessage("Email and password cannot be empty.");
+            return;
+        }
+
+        try {
+            setErrorMessage(null);
+            console.log("Provided email: " + email + ", provided password: " + password);
+            const result = await signup(email, password); // call backend
+            console.log("Signed up:", result);
+            router.push("/forYouPage")
+        } catch (error : any) {
+            console.error(error);
+            setErrorMessage(error.message || "Signup failed");
         }
     }
 
@@ -88,7 +107,7 @@ export default function Login() {
                     style={styles.signupButton}
                     textStyle={{ color: '#000' }}
                     title="Sign up"
-                    onPress={() => console.log("Pressed sign up")}
+                    onPress={handleSignup}
                 />
 
                 <Text style={styles.signupHint}>Or continue with</Text>
