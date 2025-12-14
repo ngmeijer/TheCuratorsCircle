@@ -1,7 +1,13 @@
-﻿namespace TheCuratorsCircle.Models;
+﻿using System.ComponentModel.DataAnnotations;
 
+namespace TheCuratorsCircle.Models;
+
+[Serializable]
 public class LoginRequest
 {
-    public required string Email { get; set; }
-    public required string Password { get; set; }
+    [Required]
+    public string Email { get; set; }
+    
+    [Required]
+    public string Password { get; set; }
 }

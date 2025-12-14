@@ -1,6 +1,4 @@
 using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
-using TheCuratorsCircle.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,3 +14,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
+
+public partial class Program { }
