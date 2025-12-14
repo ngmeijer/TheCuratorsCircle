@@ -1,0 +1,18 @@
+using FirebaseAdmin;
+
+var builder = WebApplication.CreateBuilder(args);
+
+Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", @"./firebase_creds.json");
+builder.Services.AddSingleton(FirebaseApp.Create());
+
+builder.Services.AddControllers(); 
+
+var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+app.Run();
+
+public partial class Program { }
