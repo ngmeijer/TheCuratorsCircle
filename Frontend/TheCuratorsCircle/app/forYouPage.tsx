@@ -4,6 +4,7 @@ import Post from '../components/Post';
 import { posts } from '../mock/posts';
 import {StyledButton} from "@/components/StyledButton";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import {router} from "expo-router";
 
 export default function ForYouPage() {
     return (
@@ -24,6 +25,20 @@ export default function ForYouPage() {
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
                 contentContainerStyle={{ paddingBottom: 60 }}
             />
+            <View style={styles.quickAccessMenu}>
+                <Pressable style={styles.button} onPress={() => console.log('Google')}>
+                    <Ionicons name="albums" size={28} />
+                </Pressable>
+
+                <Pressable style={styles.button} onPress={() => console.log('Google')}>
+                    <Ionicons name="create" size={28} />
+                </Pressable>
+
+                <Pressable style={styles.button} onPress={() => router.push('/profile')}>
+                    <Ionicons name="person-circle" size={28} />
+                </Pressable>
+            </View>
+
         </View>
     );
 }
@@ -45,5 +60,25 @@ const styles = StyleSheet.create({
     },
     separator: {
         height: 25, // small gap between posts
+    },
+    quickAccessMenu: {
+        position: 'absolute',
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
+        bottom: 30,
+        left: 60,
+        right: 60,
+        backgroundColor: 'white',
+        padding: 6,
+        borderRadius: 12,
+        elevation: 5,      // Android shadow
+        shadowColor: '#000', // iOS shadow
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+    },
+    button: {
+        padding: 4,
+        marginVertical: 2,
+        alignItems: 'center',
     },
 });
