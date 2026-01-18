@@ -1,15 +1,22 @@
-﻿import {Text, View, StyleSheet, Image, FlatList} from 'react-native';
+﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator} from 'react-native';
 import {router} from "expo-router";
 import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import Post from "@/components/Post";
 import React from "react";
+import {Colours} from "@/theme/colours";
+import { useState } from "react";
+import { posts } from '../mock/posts';
+import { collections } from '../mock/collections';
+
 
 export default function ProfilePage() {
     async function handleEditProfile() {
 
     }
+
+    const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
 
     return (
         <View style={styles.container}>
@@ -19,7 +26,9 @@ export default function ProfilePage() {
                     style={styles.profilePicture}
                 />
 
-                <Text style={styles.fullName}>Jerry Meijer</Text>
+                <Text style={styles.fullName}>
+                    Jerry Meijer
+                </Text>
                 <Text style={styles.username}>@testerJerry</Text>
                 <Text style={styles.biography}>miauw miauw miauw.
 
@@ -69,26 +78,49 @@ export default function ProfilePage() {
             <View style={styles.profileContentTabs}>
                 <View style={styles.profileContentButtons}>
                     <StyledButton
-                        style={styles.showCollectionsButton}
-                        textStyle={{ color: '#000' }}
                         title="Collections"
-                        onPress={() => console.log("Clicked show collections")}
+                        onPress={() => setActiveTab("collections")}
+                        style={[
+                            styles.tabButton,
+                            activeTab === "collections" && styles.activeTabButton
+                        ]}
+                        textStyle={[
+                            styles.tabButtonText,
+                            activeTab === "collections" && styles.activeTabText
+                        ]}
                     />
+
                     <StyledButton
-                        style={styles.showCollectionsButton}
-                        textStyle={{ color: '#000' }}
-                        title="Favourites"
-                        onPress={() => console.log("Clicked show collections")}
+                        title="Posts"
+                        onPress={() => setActiveTab("posts")}
+                        style={[
+                            styles.tabButton,
+                            activeTab === "posts" && styles.activeTabButton
+                        ]}
+                        textStyle={[
+                            styles.tabButtonText,
+                            activeTab === "posts" && styles.activeTabText
+                        ]}
                     />
                 </View>
-                <FlatList style={styles.collections}
-                    data={collections}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <CollectionButton item={item} />}
-                    numColumns={2}
-                    showsVerticalScrollIndicator={true}
-                    contentContainerStyle={{ paddingBottom: 60 }}
-                />
+                {activeTab === "collections" ? (
+                    <FlatList
+                        key="collections"
+                        data={collections}
+                        numColumns={2}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => <CollectionButton item={item} />}
+                    />
+                ) : (
+                    <FlatList
+                        key="posts"
+                        data={posts}
+                        numColumns={1}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => <Post item={item} />}
+                    />
+                )}
+
             </View>
         </View>
     );
@@ -113,14 +145,22 @@ const styles = StyleSheet.create({
       width:80, height:80,
         borderRadius: 30,
     },
-    fullName:{
-        fontSize: 24,
-        fontWeight:"bold",
-        color: '#E6E8EB'
+    fullName: {
+        color: Colours.textPrimary,
+        fontFamily: "LeagueSpartan_600SemiBold",
+        fontSize: 24
     },
     username: {
       fontSize: 20,
-        color: '#FFB454'
+        color: '#FFB454',
+        fontFamily: "LeagueSpartan_600SemiBold",
+    },
+    biography: {
+        color: 'red',
+        fontFamily: "Inter_400Regular",
+        textAlign: 'center',
+        width: 250,
+        marginVertical:5,
     },
     profileActions: {
         backgroundColor:"#121417",
@@ -138,11 +178,31 @@ const styles = StyleSheet.create({
         flex:5,
         flexDirection: 'column',
      },
+    posts: {
+        flex:5,
+        flexDirection: 'column',
+    },
+    tabText: {
+        color: "#AAA",
+    },
+
+    activeTabButton: {
+        backgroundColor: "#FFB454",
+    },
+    activeTabText: {
+        color: "#000",
+    },
+    tabButton: {
+        backgroundColor: "#2A2E35",
+        paddingHorizontal: 24,
+    },
+    tabButtonText: {
+        color: "#AAA",
+    },
     text: {
         color: '#fff'
     },
     button: {
-        backgroundColor: '#7C6DFF',
         alignItems: 'center',
         textAlign: "auto",
         justifyContent: "center",
@@ -157,9 +217,12 @@ const styles = StyleSheet.create({
     },
     detailsNameButton: {
         color: '#fff',
+        fontSize:12
     },
     detailsDataButton: {
         color: '#fff',
+        fontSize: 20,
+        fontFamily:''
     },
     editProfileButton: {
         width: 200,
@@ -167,58 +230,15 @@ const styles = StyleSheet.create({
         color:'red',
         marginVertical:10,
     },
-    biography: {
-        color: 'white',
-        textAlign: 'center',
-        width: 250,
-    },
     profileContentButtons:{
         flexDirection:"row",
         justifyContent:"space-around",
+        marginVertical:10,
     },
     showCollectionsButton: {
 
     },
-    showFavouritesButton: {
+    showPostsButton: {
 
     },
 });
-
-
-export const collections = [
-    {
-        id:"1",
-        name: 'Collection name',
-        url: 'https://picsum.photos/900/1600',
-        itemCount: 45,
-        category: "Movies",
-    },
-    {
-        id:"2",
-        name: 'Collection name',
-        url: 'https://picsum.photos/1200/800',
-        itemCount: 45,
-        category: "Music",
-    },
-    {
-        id:"3",
-        name: 'Collection name',
-        url: 'https://picsum.photos/800/1200',
-        itemCount: 45,
-        category: "Music",
-    },
-    {
-        id:"4",
-        name: 'Collection name',
-        url: 'https://picsum.photos/1080/1350',
-        itemCount: 45,
-        category: "Music",
-    },
-    {
-        id:"5",
-        name: 'Collection name',
-        url: 'https://picsum.photos/1600/900',
-        itemCount: 45,
-        category: "Music",
-    }
-];
