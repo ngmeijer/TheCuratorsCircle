@@ -4,19 +4,72 @@ import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import Post from "@/components/Post";
-import React from "react";
+import React, {useEffect} from "react";
 import {Colours} from "@/theme/colours";
 import { useState } from "react";
 import { posts } from '../mock/posts';
 import { collections } from '../mock/collections';
+import { getMovie } from "@/api/databaseClient";
+import { PostDto } from "@/DTOs/PostDto"
 
+function handleEditProfile(){
+
+}
+
+export function useProfilePosts() {
+    const [posts, setPosts] = useState<PostDto[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadPosts() {
+            setLoading(true);
+            try {
+                const movieNames = ["Iron Man", "Spider-Man: No Way Home", "The Batman"];
+                const posts = await Promise.all(
+                    movieNames.map(async (name) => {
+                        const movieArray = await getMovie(name);
+                        if (!movieArray || movieArray.length === 0) return null;
+
+                        const movie = movieArray[0]; // <- first movie in array
+
+                        console.log("Movie ID received from frontend:" + movie.id);
+
+                        return {
+                            id: movie.id,            // already has id like 'omdb-tt1877830'
+                            name: movie.name,
+                            title: movie.movieTitle,
+                            category: "Movies",
+                            aspectRatio: 0.67,
+                            url: movie.posterUrl,
+                            likeCount: Math.floor(Math.random() * 5000),
+                            commentCount: Math.floor(Math.random() * 200),
+                            shareCount: Math.floor(Math.random() * 50),
+                        };
+                    })
+                );
+
+
+                setPosts(posts.filter(Boolean) as PostDto[]);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadPosts();
+    }, []);
+
+    return { posts, loading };
+}
 
 export default function ProfilePage() {
-    async function handleEditProfile() {
-
-    }
-
+    const { posts, loading } = useProfilePosts();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
+
+    if (loading) return <ActivityIndicator size="large" color="#fff" />;
+    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
+    console.log(posts.map(p => ({ id: p.id, title: p.name })));
 
     return (
         <View style={styles.container}>
