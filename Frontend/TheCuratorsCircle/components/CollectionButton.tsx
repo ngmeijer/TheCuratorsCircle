@@ -1,20 +1,17 @@
-﻿import React from 'react';
+import React from 'react';
 import {View, Image, StyleSheet, Text} from 'react-native';
 
-interface PostProps {
+interface CollectionProps {
     item: {
         id: string;
-        url: string;
-        title: string;
-        aspectRatio: number;
+        name: string;
         category: string;
-        likeCount: number;
-        commentCount: number;
-        shareCount: number;
+        url: string;
+        itemCount: number;
     };
 }
 
-export default function Post({ item }: PostProps) {
+export default function CollectionButton({item}: CollectionProps) {
     return (
         <View style={styles.collectionContainer}>
             <View style={styles.imageWrapper}>
@@ -23,12 +20,12 @@ export default function Post({ item }: PostProps) {
                     style={[styles.image]}
                 />
                 <View style={styles.nameOverlay}>
-                    <Text style={styles.title}>{item.title}</Text>
+                    <Text style={styles.name}>{item.name}</Text>
                     <Text style={styles.category}>{item.category}</Text>
                 </View>
 
-                <View style={styles.likeCountOverlay}>
-                    <Text style={styles.likeCount}>{item.likeCount} likes</Text>
+                <View style={styles.itemCountOverlay}>
+                    <Text style={styles.itemCount}>{item.itemCount} items</Text>
                 </View>
             </View>
         </View>
@@ -39,7 +36,9 @@ const styles = StyleSheet.create({
     collectionContainer: {
         alignItems: 'center',
         flex: 1,
+        marginHorizontal: 10,
         marginVertical: 5,
+        maxWidth: "48%",
     },
     imageWrapper: {
         position:'relative',
@@ -57,28 +56,26 @@ const styles = StyleSheet.create({
     nameOverlay: {
         position: 'absolute',
         width: '90%',
-        height: '20%',
         top: 8,
-        left: 16,
+        left: 8,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         paddingHorizontal:8,
         paddingVertical:4,
         borderRadius:12,
     },
-    likeCountOverlay: {
-        position: 'absolute',
-        bottom: 8,
-        right: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    itemCountOverlay: {
+      position: 'absolute',
+      bottom: 8,
+      right: 8,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
         paddingHorizontal:8,
-        paddingVertical:4,
-        borderRadius:12,
+      paddingVertical:4,
+      borderRadius:12,
     },
-    title: {
-        color:'white',
-        fontSize: 24,
+    name: {
+        color:'white'
     },
-    likeCount: {
+    itemCount: {
         color: 'white',
         padding: 5,
         borderRadius: 6

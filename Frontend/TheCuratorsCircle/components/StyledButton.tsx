@@ -1,11 +1,11 @@
 ﻿import React from 'react';
-import { Pressable, Text, StyleSheet, GestureResponderEvent, ViewStyle, TextStyle } from 'react-native';
+import {Pressable, Text, StyleSheet, GestureResponderEvent, ViewStyle, TextStyle, StyleProp} from 'react-native';
 
 interface StyledButtonProps {
     title: string;
     onPress: (event: GestureResponderEvent) => void;
-    style?: ViewStyle;
-    textStyle?: TextStyle;
+    style?: StyleProp<ViewStyle>;
+    textStyle?: StyleProp<TextStyle>;
 }
 
 export
