@@ -7,10 +7,9 @@ import Post from "@/components/Post";
 import React, {useEffect} from "react";
 import {Colours} from "@/theme/colours";
 import { useState } from "react";
-import { posts } from '../mock/posts';
-import { collections } from '../mock/collections';
-import { getMovie } from "@/api/databaseClient";
+import {getCollections, getPosts} from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
+import { CollectionDto } from "@/DTOs/CollectionDto"
 
 function handleEditProfile(){
 
@@ -18,38 +17,14 @@ function handleEditProfile(){
 
 export function useProfilePosts() {
     const [posts, setPosts] = useState<PostDto[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loadingPosts, setLoading] = useState(true);
 
     useEffect(() => {
         async function loadPosts() {
             setLoading(true);
             try {
-                const movieNames = ["Iron Man", "Spider-Man: No Way Home", "The Batman"];
-                const posts = await Promise.all(
-                    movieNames.map(async (name) => {
-                        const movieArray = await getMovie(name);
-                        if (!movieArray || movieArray.length === 0) return null;
-
-                        const movie = movieArray[0]; // <- first movie in array
-
-                        console.log("Movie ID received from frontend:" + movie.id);
-
-                        return {
-                            id: movie.id,            // already has id like 'omdb-tt1877830'
-                            name: movie.name,
-                            title: movie.movieTitle,
-                            category: "Movies",
-                            aspectRatio: 0.67,
-                            url: movie.posterUrl,
-                            likeCount: Math.floor(Math.random() * 5000),
-                            commentCount: Math.floor(Math.random() * 200),
-                            shareCount: Math.floor(Math.random() * 50),
-                        };
-                    })
-                );
-
-
-                setPosts(posts.filter(Boolean) as PostDto[]);
+                const posts = await getPosts();
+                setPosts(posts);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -60,16 +35,39 @@ export function useProfilePosts() {
         loadPosts();
     }, []);
 
-    return { posts, loading };
+    return { posts, loadingPosts };
+}
+
+export function useProfileCollections() {
+    const [collections, setCollections] = useState<CollectionDto[]>([]);
+    const [loadingCollections, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadCollections() {
+            setLoading(true);
+            try {
+                const collections = await getCollections();
+                setCollections(collections);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadCollections();
+    }, []);
+
+    return { collections, loadingCollections };
 }
 
 export default function ProfilePage() {
-    const { posts, loading } = useProfilePosts();
+    const { posts, loadingPosts } = useProfilePosts();
+    const { collections, loadingCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
 
-    if (loading) return <ActivityIndicator size="large" color="#fff" />;
+    if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
     if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
-    console.log(posts.map(p => ({ id: p.id, title: p.name })));
 
     return (
         <View style={styles.container}>
@@ -168,7 +166,7 @@ export default function ProfilePage() {
                     <FlatList
                         key="posts"
                         data={posts}
-                        numColumns={1}
+                        numColumns={2}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => <Post item={item} />}
                     />

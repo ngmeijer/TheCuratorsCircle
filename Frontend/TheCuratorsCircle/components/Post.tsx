@@ -1,13 +1,14 @@
 ﻿import React from 'react';
 import {View, Image, StyleSheet, Text} from 'react-native';
+import {Movie} from "@/DTOs/CollectionDto";
 
 interface PostProps {
     item: {
         id: string;
-        url: string;
-        title: string;
-        aspectRatio: number;
+        name: string;
+        movieData: Movie;
         category: string;
+        aspectRatio: number;
         likeCount: number;
         commentCount: number;
         shareCount: number;
@@ -15,15 +16,17 @@ interface PostProps {
 }
 
 export default function Post({ item }: PostProps) {
+    console.log("poster uri and post name:", item.name, item.movieData.posterUrl);
+
     return (
         <View style={styles.collectionContainer}>
             <View style={styles.imageWrapper}>
                 <Image
-                    source={{uri: item.url}}
+                    source={{uri: item.movieData.posterUrl}}
                     style={[styles.image]}
                 />
                 <View style={styles.nameOverlay}>
-                    <Text style={styles.title}>{item.title}</Text>
+                    <Text style={styles.title}>{item.movieData.title}</Text>
                     <Text style={styles.category}>{item.category}</Text>
                 </View>
 

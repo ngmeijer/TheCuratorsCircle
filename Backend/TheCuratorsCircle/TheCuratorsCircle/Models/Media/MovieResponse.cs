@@ -4,7 +4,7 @@ namespace TheCuratorsCircle.Models.Media;
 
 public class MovieResponse
 {
-            [JsonPropertyName("Title")]
+        [JsonPropertyName("Title")]
         public string Title { get; set; }
 
         [JsonPropertyName("Year")]
