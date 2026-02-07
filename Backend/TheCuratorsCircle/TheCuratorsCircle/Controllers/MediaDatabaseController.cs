@@ -89,18 +89,7 @@ public class MediaDatabaseController : ControllerBase
                         continue;
 
                     //If data retrieved, map to DTO
-                    string format = "dd MMM yyyy";
-
-                    MovieDto dto = new MovieDto
-                    {
-                        Title = data.Title,
-                        Genre = data.Genre,
-                        Plot = data.Plot,
-                        PosterUrl = data.Poster,
-                        ReleaseDate = DateTime.ParseExact(data.Released, format, CultureInfo.InvariantCulture),
-                        RuntimeInMinutes = data.Runtime,
-                        Language = data.Language
-                    };
+                    MovieDto dto = Mapper.MapToDto(data);
                     movieDtos.Add(dto);
                 }
                 
@@ -130,7 +119,8 @@ public class MediaDatabaseController : ControllerBase
                 "Nuremberg",
                 "300",
                 "Afterburn",
-                "Prometheus"
+                "Prometheus",
+                "Avatar"
             };
 
             var tasks = movieNames

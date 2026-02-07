@@ -13,14 +13,3 @@ public class PostDto
     public int CommentCount { get; set; }
     public int ShareCount { get; set; }   
 }
-
-public class MovieDto
-{
-    public string Title { get; set; }     
-    public string Genre { get; set; }
-    public string Plot { get; set; }
-    public string PosterUrl { get; set; }
-    public DateTime ReleaseDate { get; set; }
-    public string RuntimeInMinutes { get; set; }
-    public string Language { get; set; }
-}

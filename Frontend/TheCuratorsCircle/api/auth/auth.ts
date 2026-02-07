@@ -1,7 +1,9 @@
-﻿export async function login(email : string, password: string) {
+﻿let ipadress = "100.119.203.57";
+
+export async function login(email : string, password: string) {
     const json = JSON.stringify({email, password});
 
-    const response = await fetch("http://100.90.173.113:5044/auth/login", {
+    const response = await fetch(`http://${ipadress}:5044/auth/login`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

@@ -6,7 +6,7 @@ interface PostProps {
     item: {
         id: string;
         name: string;
-        movieData: Movie;
+        mediaData: Movie;
         category: string;
         aspectRatio: number;
         likeCount: number;
@@ -16,17 +16,15 @@ interface PostProps {
 }
 
 export default function Post({ item }: PostProps) {
-    console.log("poster uri and post name:", item.name, item.movieData.posterUrl);
-
     return (
         <View style={styles.collectionContainer}>
             <View style={styles.imageWrapper}>
                 <Image
-                    source={{uri: item.movieData.posterUrl}}
+                    source={{uri: item.mediaData.posterUrl}}
                     style={[styles.image]}
                 />
                 <View style={styles.nameOverlay}>
-                    <Text style={styles.title}>{item.movieData.title}</Text>
+                    <Text style={styles.title}>{item.mediaData.title}</Text>
                     <Text style={styles.category}>{item.category}</Text>
                 </View>
 

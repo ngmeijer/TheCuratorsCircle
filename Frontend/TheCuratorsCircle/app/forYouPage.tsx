@@ -31,7 +31,6 @@ export function useProfilePosts() {
     return { posts, loadingPosts };
 }
 
-
 export default function ForYouPage() {
     const { posts, loadingPosts } = useProfilePosts();
 
