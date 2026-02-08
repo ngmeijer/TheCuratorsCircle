@@ -10,7 +10,7 @@ public static class JwtTokenGenerator
 {
     public static string GenerateToken(string email)
     {
-        var jsonText = File.ReadAllText(@"E:\Keystores\TheCuratorsCircle\credentials.json");
+        var jsonText = File.ReadAllText("./credentials.json");
         var jsonDoc = JsonDocument.Parse(jsonText);
         
         var secret = jsonDoc.RootElement.GetProperty("environmentVariables")

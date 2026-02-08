@@ -1,12 +1,42 @@
-﻿import React from 'react';
-import {View, FlatList, StyleSheet, Text, Pressable} from 'react-native';
+﻿import React, {useEffect, useState} from 'react';
+import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator} from 'react-native';
 import Post from '../components/Post';
 import { posts } from '../mock/posts';
 import {StyledButton} from "@/components/StyledButton";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
+import {PostDto} from "@/DTOs/PostDto";
+import {getPosts} from "@/api/databaseClient";
+
+export function useProfilePosts() {
+    const [posts, setPosts] = useState<PostDto[]>([]);
+    const [loadingPosts, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadPosts() {
+            setLoading(true);
+            try {
+                const posts = await getPosts();
+                setPosts(posts);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadPosts();
+    }, []);
+
+    return { posts, loadingPosts };
+}
 
 export default function ForYouPage() {
+    const { posts, loadingPosts } = useProfilePosts();
+
+    if (loadingPosts) return <ActivityIndicator size="large" color="#fff" />;
+    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
+
     return (
         <View style={styles.container}>
             {/* Optional header */}
@@ -15,12 +45,11 @@ export default function ForYouPage() {
             </View>
 
             <FlatList
+                key="posts"
                 data={posts}
+                numColumns={2}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => <Post item={item} />}
-                showsVerticalScrollIndicator={false}
-                ItemSeparatorComponent={() => <View style={styles.separator} />}
-                contentContainerStyle={{ paddingBottom: 60 }}
             />
             <View style={styles.quickAccessMenu}>
                 <Pressable style={styles.button} onPress={() => console.log('Google')}>

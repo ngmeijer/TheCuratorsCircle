@@ -4,19 +4,70 @@ import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import Post from "@/components/Post";
-import React from "react";
+import React, {useEffect} from "react";
 import {Colours} from "@/theme/colours";
 import { useState } from "react";
-import { posts } from '../mock/posts';
-import { collections } from '../mock/collections';
+import {getCollections, getPosts} from "@/api/databaseClient";
+import { PostDto } from "@/DTOs/PostDto"
+import { CollectionDto } from "@/DTOs/CollectionDto"
 
+function handleEditProfile(){
+
+}
+
+export function useProfilePosts() {
+    const [posts, setPosts] = useState<PostDto[]>([]);
+    const [loadingPosts, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadPosts() {
+            setLoading(true);
+            try {
+                const posts = await getPosts();
+                setPosts(posts);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadPosts();
+    }, []);
+
+    return { posts, loadingPosts };
+}
+
+export function useProfileCollections() {
+    const [collections, setCollections] = useState<CollectionDto[]>([]);
+    const [loadingCollections, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadCollections() {
+            setLoading(true);
+            try {
+                const collections = await getCollections();
+                setCollections(collections);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadCollections();
+    }, []);
+
+    return { collections, loadingCollections };
+}
 
 export default function ProfilePage() {
-    async function handleEditProfile() {
-
-    }
-
+    const { posts, loadingPosts } = useProfilePosts();
+    const { collections, loadingCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
+
+    if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
+    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
 
     return (
         <View style={styles.container}>
@@ -115,7 +166,7 @@ export default function ProfilePage() {
                     <FlatList
                         key="posts"
                         data={posts}
-                        numColumns={1}
+                        numColumns={2}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => <Post item={item} />}
                     />
