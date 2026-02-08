@@ -3,7 +3,7 @@ import {Movie} from "@/DTOs/CollectionDto";
 export interface PostDto {
     id: string;
     name: string;
-    movieData: Movie;
+    mediaData: Movie;
     title: string;
     category: string;
     aspectRatio: number;
