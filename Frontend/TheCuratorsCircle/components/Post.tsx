@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import {View, Image, StyleSheet, Text} from 'react-native';
+import { View, Image, StyleSheet, Text, Pressable } from 'react-native';
 import {Movie} from "@/DTOs/CollectionDto";
 
 interface PostProps {
@@ -13,15 +13,22 @@ interface PostProps {
         commentCount: number;
         shareCount: number;
     };
+    onPress?: () => void;
 }
 
-export default function Post({ item }: PostProps) {
+export default function Post({ item, onPress }: PostProps) {
     return (
-        <View style={styles.collectionContainer}>
+        <Pressable
+            onPress={onPress}
+            style={({ pressed }) => [
+                styles.collectionContainer,
+                { opacity: pressed ? 0.8 : 1 } // Visual feedback on touch
+            ]}
+        >
             <View style={styles.imageWrapper}>
                 <Image
-                    source={{uri: item.mediaData.posterUrl}}
-                    style={[styles.image]}
+                    source={{ uri: item.mediaData.posterUrl }}
+                    style={styles.image}
                 />
                 <View style={styles.nameOverlay}>
                     <Text style={styles.title}>{item.mediaData.title}</Text>
@@ -32,7 +39,7 @@ export default function Post({ item }: PostProps) {
                     <Text style={styles.likeCount}>{item.likeCount} likes</Text>
                 </View>
             </View>
-        </View>
+        </Pressable>
     );
 }
 

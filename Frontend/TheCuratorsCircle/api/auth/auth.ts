@@ -1,4 +1,4 @@
-﻿let ipadress = "100.119.203.57";
+﻿let ipadress = "100.90.173.113";
 
 export async function login(email : string, password: string) {
     const json = JSON.stringify({email, password});

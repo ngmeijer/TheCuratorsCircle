@@ -1,4 +1,4 @@
-﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator} from 'react-native';
+﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator, Pressable} from 'react-native';
 import {router} from "expo-router";
 import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
@@ -13,6 +13,14 @@ import { CollectionDto } from "@/DTOs/CollectionDto"
 
 function handleEditProfile(){
 
+}
+
+const handlePostPress = (postId: string) => {
+    console.log(`Navigating to post: ${postId}`);
+    router.push({
+        pathname: "/postDetails",
+        params: { id: postId}
+    });
 }
 
 export function useProfilePosts() {
@@ -164,11 +172,15 @@ export default function ProfilePage() {
                     />
                 ) : (
                     <FlatList
-                        key="posts"
                         data={posts}
                         numColumns={2}
                         keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => <Post item={item} />}
+                        renderItem={({ item }) => (
+                            <Post
+                                item={item}
+                                onPress={() => handlePostPress(item.id)}
+                            />
+                        )}
                     />
                 )}
 

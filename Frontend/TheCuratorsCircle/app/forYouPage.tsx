@@ -1,8 +1,6 @@
 ﻿import React, {useEffect, useState} from 'react';
 import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator} from 'react-native';
 import Post from '../components/Post';
-import { posts } from '../mock/posts';
-import {StyledButton} from "@/components/StyledButton";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
 import {PostDto} from "@/DTOs/PostDto";
