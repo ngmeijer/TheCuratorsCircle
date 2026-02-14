@@ -7,6 +7,7 @@ interface PostProps {
         id: string;
         name: string;
         mediaData: Movie;
+        createdAt: string;
         category: string;
         aspectRatio: number;
         likeCount: number;
@@ -31,6 +32,7 @@ export default function Post({ item, onPress }: PostProps) {
                     style={styles.image}
                 />
                 <View style={styles.nameOverlay}>
+                    <Text style={styles.title}>{item.name}</Text>
                     <Text style={styles.title}>{item.mediaData.title}</Text>
                     <Text style={styles.category}>{item.category}</Text>
                 </View>
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
     nameOverlay: {
         position: 'absolute',
         width: '90%',
-        height: '20%',
+        height: 'auto',
         top: 8,
         left: 16,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

@@ -4,6 +4,7 @@ export interface PostDto {
     id: string;
     name: string;
     mediaData: Movie;
+    createdAt: string;
     title: string;
     category: string;
     aspectRatio: number;

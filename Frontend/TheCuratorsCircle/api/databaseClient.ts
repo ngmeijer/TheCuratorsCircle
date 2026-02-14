@@ -1,6 +1,6 @@
 import {PostDto} from "@/DTOs/PostDto";
 
-let ipadress = "100.90.173.113";
+let ipadress = "100.119.203.57";
 
 export async function getCollections() {
     const response = await fetch(`http://${ipadress}:5044/user/collections`, {
@@ -50,7 +50,10 @@ export async function getPosts() {
     }
 
     const receivedData = await response.json();
-    console.log("Posts data received:", receivedData);
+    console.log(
+        "Specific post data received:\n",
+        JSON.stringify(receivedData, null, 2)
+    );
     return receivedData;
 }
 
@@ -76,6 +79,9 @@ export async function getPost(postId: string){
     }
 
     const receivedData = await response.json();
-    console.log("Specific post data received:", receivedData);
+    console.log(
+        "Specific post data received:\n",
+        JSON.stringify(receivedData, null, 2)
+    );
     return receivedData;
 }

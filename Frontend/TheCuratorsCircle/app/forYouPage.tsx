@@ -29,6 +29,10 @@ export function useProfilePosts() {
     return { posts, loadingPosts };
 }
 
+function onPressPost() {
+    router.push("/postDetails");
+}
+
 export default function ForYouPage() {
     const { posts, loadingPosts } = useProfilePosts();
 
@@ -47,7 +51,17 @@ export default function ForYouPage() {
                 data={posts}
                 numColumns={2}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <Post item={item} />}
+                renderItem={({ item }) => (
+                    <Post
+                        item={item}
+                        onPress={() =>
+                            router.push({
+                                pathname:"/postDetails",
+                                params: {id: item.id},
+                            })
+                        }
+                    />
+                )}
             />
             <View style={styles.quickAccessMenu}>
                 <Pressable style={styles.button} onPress={() => console.log('Google')}>

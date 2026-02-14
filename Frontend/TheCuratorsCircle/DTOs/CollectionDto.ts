@@ -4,6 +4,7 @@ export interface Movie {
     genre: string;
     plot: string;
     posterUrl: string;
+    releaseYear: string;
     releaseDate: string;
     runtimeInMinutes: string;
     language: string;

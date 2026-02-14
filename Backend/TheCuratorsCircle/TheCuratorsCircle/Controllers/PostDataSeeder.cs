@@ -27,8 +27,9 @@ public class PostDataSeeder
         {
             var dto = new PostDto {
                 Id = Guid.CreateVersion7().ToString(),
-                Name = response.Title,
+                Name = "Test title",
                 MediaData = Mapper.MapToDto(response),
+                CreatedAt = new DateTime(2026, 02, 14, 16,12,0).ToString("MM/dd/yyyy HH:mm"),
                 LikeCount = 4343,
                 CommentCount = 576,
                 ShareCount = 65,

@@ -5,11 +5,9 @@ import { useLocalSearchParams } from 'expo-router'; // 1. Import the hook
 import { PostDto } from "@/DTOs/PostDto";
 
 export default function PostDetails() {
-    const params = useLocalSearchParams();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [postData, setPostData] = useState<PostDto | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    console.log("Full Router Params:", params);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -48,20 +46,14 @@ export default function PostDetails() {
         <View style={styles.container}>
             <Image
                 source={{ uri: postData.mediaData.posterUrl }}
-                style={{ width: '100%', height: 300 }} // Ensure dimensions are set!
+                style={{ width: '100%', height: 300 }}
             />
-            <Text style={styles.header}>Testing post {postData.name} name</Text>
-            <Text style={styles.plot}>{postData.mediaData.plot}</Text>
-        </View>
-    );
-
-    return (
-        <View style={styles.container}>
-            <Image
-                source={{ uri: postData?.mediaData.posterUrl }}
-            />
-            <Text style={styles.header}>Testing post {postData?.name} name</Text>
-            <Text style={styles.plot}>{postData?.mediaData.plot}</Text>
+            <View style={styles.content}>
+                <Text style={styles.header}>{postData.name}</Text>
+                <Text style={styles.header}>{postData.mediaData.title}, {postData.mediaData.releaseYear}</Text>
+                <Text style={styles.createdAt}>{postData.createdAt}</Text>
+                <Text style={styles.plot}>{postData.mediaData.plot}</Text>
+            </View>
         </View>
     );
 }
@@ -69,14 +61,22 @@ export default function PostDetails() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "red",
+        backgroundColor: "#000E14",
+    },
+    content: {
+        marginHorizontal:20,
     },
     header: {
-        paddingTop: 40,
-        paddingBottom: 12,
-        paddingHorizontal: 20,
+        color:"#D6F1FF",
+        fontSize:32,
+        paddingTop: 6,
+    },
+    createdAt: {
+        fontSize:16,
+        color:"#85D6FF",
     },
     plot: {
-
+        color:"#85D6FF",
+        fontSize:14,
     }
 });
