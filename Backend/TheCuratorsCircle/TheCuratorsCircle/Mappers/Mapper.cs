@@ -23,7 +23,8 @@ public class Mapper
             ReleaseYear =  parsedDate.Year.ToString(),
             ReleaseDate = parsedDate.ToShortDateString(),
             RuntimeInMinutes = response.Runtime,
-            Language = response.Language
+            Language = response.Language,
+            Rating =  response.ImdbRating,
         };
     }
 }

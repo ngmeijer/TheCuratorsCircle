@@ -10,4 +10,5 @@ public class MovieDto
     public string ReleaseDate { get; set; }
     public string RuntimeInMinutes { get; set; }
     public string Language { get; set; }
-}
+    public string Rating { get; set; }
+}   

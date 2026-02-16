@@ -8,6 +8,7 @@ export interface Movie {
     releaseDate: string;
     runtimeInMinutes: string;
     language: string;
+    rating: number;
 }
 
 export interface CollectionDto {
