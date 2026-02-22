@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace TheCuratorsCircle.Models.Media;
 
-public class MovieResponse
+public class MediaResponse
 {
         [JsonPropertyName("Title")]
         public string Title { get; set; }
@@ -64,6 +64,9 @@ public class MovieResponse
         [JsonPropertyName("Type")]
         public string Type { get; set; }
 
+        [JsonPropertyName("totalSeasons")]
+        public string? TotalSeasons { get; set; }
+
         [JsonPropertyName("DVD")]
         public string DVD { get; set; }
 
@@ -78,13 +81,4 @@ public class MovieResponse
 
         [JsonPropertyName("Response")]
         public string Response { get; set; }
-}
-
-public class Rating
-{
-    [JsonPropertyName("Source")]
-    public string Source { get; set; }
-
-    [JsonPropertyName("Value")]
-    public string Value { get; set; }
 }

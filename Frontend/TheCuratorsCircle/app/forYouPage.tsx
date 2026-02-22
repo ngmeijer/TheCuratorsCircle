@@ -1,8 +1,6 @@
 ﻿import React, {useEffect, useState} from 'react';
 import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator} from 'react-native';
 import Post from '../components/Post';
-import { posts } from '../mock/posts';
-import {StyledButton} from "@/components/StyledButton";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
 import {PostDto} from "@/DTOs/PostDto";
@@ -31,6 +29,10 @@ export function useProfilePosts() {
     return { posts, loadingPosts };
 }
 
+function onPressPost() {
+    router.push("/postDetails");
+}
+
 export default function ForYouPage() {
     const { posts, loadingPosts } = useProfilePosts();
 
@@ -49,7 +51,17 @@ export default function ForYouPage() {
                 data={posts}
                 numColumns={2}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <Post item={item} />}
+                renderItem={({ item }) => (
+                    <Post
+                        item={item}
+                        onPress={() =>
+                            router.push({
+                                pathname:"/postDetails",
+                                params: {id: item.id},
+                            })
+                        }
+                    />
+                )}
             />
             <View style={styles.quickAccessMenu}>
                 <Pressable style={styles.button} onPress={() => console.log('Google')}>
