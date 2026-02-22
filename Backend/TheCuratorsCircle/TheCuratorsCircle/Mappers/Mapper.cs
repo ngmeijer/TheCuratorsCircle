@@ -6,7 +6,7 @@ namespace TheCuratorsCircle.Mappers;
 
 public class Mapper
 {
-    public static MovieDto MapToDto(MovieResponse response)
+    public static MediaDto MapToDto(MediaResponse response)
     {
         DateTime parsedDate = DateTime.ParseExact(
             response.Released,
@@ -14,7 +14,7 @@ public class Mapper
             CultureInfo.InvariantCulture
         );
         
-        return new MovieDto()
+        return new MediaDto()
         {
             Title = response.Title,
             Genre  = response.Genre,
@@ -34,6 +34,8 @@ public class Mapper
             BoxOffice = response.BoxOffice,
             Metascore = response.Metascore,
             ImdbVotes = response.ImdbVotes,
+            MediaType = response.Type ?? "movie",
+            TotalSeasons = response.TotalSeasons,
         };
     }
 }

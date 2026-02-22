@@ -23,17 +23,17 @@ public class MediaDatabaseController : ControllerBase
         _apiClient = apiHttpApiClient;
     }
 
-    [HttpGet("movie")]
-    public async Task<IActionResult> GetMovieData([FromQuery] MovieRequest request)
+    [HttpGet("media")]
+    public async Task<IActionResult> GetMediaData([FromQuery] MediaRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(new { message = "Invalid data." });
 
-        var post = await _apiClient.FetchMoviePostAsync(request.MovieName);
+        var media = await _apiClient.FetchMediaAsync(request.Title);
 
-        if (post == null)
-            return NotFound(new { message = "Movie not found" });
+        if (media == null)
+            return NotFound(new { message = "Media not found" });
 
-        return Ok(new[] { post });
+        return Ok(new[] { media });
     }
 }

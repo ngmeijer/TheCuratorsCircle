@@ -1,20 +1,20 @@
 import React from 'react';
 import {View, Image, StyleSheet, Text} from 'react-native';
-import {Movie} from "@/DTOs/CollectionDto";
+import {Media} from "@/DTOs/CollectionDto";
 
 interface CollectionProps {
     item: {
         id: string;
         name: string;
         category: string;
-        moviesData: Movie[];
+        mediaData: Media[];
     };
 }
 
 export default function CollectionButton({item}: CollectionProps) {
     const posterUri =
-        item.moviesData[0].posterUrl !== 'N/A'
-            ? item.moviesData[0].posterUrl
+        item.mediaData[0].posterUrl !== 'N/A'
+            ? item.mediaData[0].posterUrl
             : null;
 
     console.log("poster uri and collection name:", item.name, posterUri);
@@ -35,7 +35,7 @@ export default function CollectionButton({item}: CollectionProps) {
                 </View>
 
                 <View style={styles.itemCountOverlay}>
-                    <Text style={styles.itemCount}>{item.moviesData?.length} items</Text>
+                    <Text style={styles.itemCount}>{item.mediaData?.length} items</Text>
                 </View>
             </View>
         </View>

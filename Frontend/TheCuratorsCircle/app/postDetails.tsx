@@ -81,7 +81,11 @@ export default function PostDetails() {
                         <View style={styles.dot} />
                         <Text style={styles.heroText}>{postData.mediaData.genre}</Text>
                         <View style={styles.dot} />
-                        <Text style={styles.heroText}>{postData.mediaData.runtimeInMinutes}</Text>
+                        <Text style={styles.heroText}>
+                            {postData.mediaData.mediaType === 'series' 
+                                ? `${postData.mediaData.totalSeasons} seasons` 
+                                : postData.mediaData.runtimeInMinutes}
+                        </Text>
                     </View>
                     <View style={styles.ratingBadge}>
                         <Text style={styles.ratingText}>{postData.mediaData.rating}</Text>
@@ -178,6 +182,13 @@ function DetailsTab({ postData }: { postData: PostDto | null }) {
                 <>
                     <Text style={styles.sectionTitle}>Director</Text>
                     <Text style={styles.infoText}>{mediaData.director}</Text>
+                </>
+            )}
+
+            {mediaData.totalSeasons && (
+                <>
+                    <Text style={styles.sectionTitle}>Seasons</Text>
+                    <Text style={styles.infoText}>{mediaData.totalSeasons}</Text>
                 </>
             )}
 

@@ -1,9 +1,9 @@
-import {Movie} from "@/DTOs/CollectionDto";
+import {Media} from "@/DTOs/CollectionDto";
 
 export interface PostDto {
     id: string;
     name: string;
-    mediaData: Movie;
+    mediaData: Media;
     createdAt: string;
     title: string;
     category: string;

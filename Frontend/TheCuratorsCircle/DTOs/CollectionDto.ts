@@ -1,4 +1,4 @@
-export interface Movie {
+export interface Media {
     id: string;
     title: string;
     genre: string;
@@ -18,11 +18,13 @@ export interface Movie {
     boxOffice?: string;
     metascore?: string;
     imdbVotes?: string;
+    mediaType?: string;
+    totalSeasons?: string;
 }
 
 export interface CollectionDto {
     id: string;
     name: string;
     category: string;
-    moviesData: Movie[];
+    mediaData: Media[];
 }

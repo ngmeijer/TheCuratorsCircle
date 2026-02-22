@@ -19,8 +19,8 @@ public class PostDataSeeder
         // Only seed if we haven't already
         if (SeededPosts.Any()) return;
 
-        var movieNames = new[] { "Iron Man", "300", "Avatar" };
-        var tasks = movieNames.Select(name => _apiClient.FetchMoviePostAsync(name));
+        var mediaNames = new[] { "Iron Man", "300", "Avatar", "Breaking Bad" };
+        var tasks = mediaNames.Select(name => _apiClient.FetchMediaAsync(name));
         var results = await Task.WhenAll(tasks);
 
         foreach (var response in results.Where(r => r != null))

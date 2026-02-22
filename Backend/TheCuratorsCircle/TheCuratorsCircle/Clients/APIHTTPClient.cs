@@ -14,14 +14,14 @@ public class APIHTTPClient
         _config = config;
     }
     
-    public async Task<MovieResponse?> FetchMoviePostAsync(string movieName)
+    public async Task<MediaResponse?> FetchMediaAsync(string title)
     {
         var apiKey = _config["OMDB_API_KEY"];
         if (string.IsNullOrEmpty(apiKey))
             return null;
 
         var response = await _client.GetAsync(
-            $"http://www.omdbapi.com/?apikey={apiKey}&t={Uri.EscapeDataString(movieName)}"
+            $"http://www.omdbapi.com/?apikey={apiKey}&t={Uri.EscapeDataString(title)}"
         );
 
         if (!response.IsSuccessStatusCode)
@@ -29,11 +29,11 @@ public class APIHTTPClient
 
         var json = await response.Content.ReadAsStringAsync();
 
-        var omdbMovie = JsonSerializer.Deserialize<MovieResponse>(json);
+        var media = JsonSerializer.Deserialize<MediaResponse>(json);
 
-        if (omdbMovie == null || omdbMovie.Response == "False")
+        if (media == null || media.Response == "False")
             return null;
 
-        return omdbMovie;
+        return media;
     }
 }

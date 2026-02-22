@@ -6,5 +6,5 @@ public class CollectionDto
 {
     public string Name { get; set; }
     public string Category { get; set; }
-    public List<MovieDto> MoviesData { get; set; }
+    public List<MediaDto> MediaData { get; set; }
 }

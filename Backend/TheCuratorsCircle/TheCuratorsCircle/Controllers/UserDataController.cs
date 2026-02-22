@@ -89,24 +89,24 @@ public class UserDataController : ControllerBase
             foreach (var collection in storedCollections)
             {
                 CollectionDto collectionDto = new();
-                List<MovieDto> movieDtos = new List<MovieDto>();
+                List<MediaDto> mediaDtos = new List<MediaDto>();
                 
-                //Collect data about all movies in the collection
+                //Collect data about all media in the collection
                 foreach (string itemTitle in collection.ItemIDs)
                 {
-                    //Get specific movie data
-                    MovieResponse data = await _apiClient.FetchMoviePostAsync(itemTitle);
+                    //Get specific media data
+                    MediaResponse data = await _apiClient.FetchMediaAsync(itemTitle);
                     if(data == null)
                         continue;
 
                     //If data retrieved, map to DTO
-                    MovieDto dto = Mapper.MapToDto(data);
-                    movieDtos.Add(dto);
+                    MediaDto dto = Mapper.MapToDto(data);
+                    mediaDtos.Add(dto);
                 }
                 
                 collectionDto.Category = collection.Category;
                 collectionDto.Name = collection.Name;
-                collectionDto.MoviesData = movieDtos;
+                collectionDto.MediaData = mediaDtos;
                 collections.Add(collectionDto);
             }
             Console.WriteLine(collections);
