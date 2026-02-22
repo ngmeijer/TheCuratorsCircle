@@ -25,6 +25,15 @@ public class Mapper
             RuntimeInMinutes = response.Runtime,
             Language = response.Language,
             Rating =  response.ImdbRating,
+            Director = response.Director,
+            Actors = response.Actors,
+            Writer = response.Writer,
+            Rated = response.Rated,
+            Country = response.Country,
+            Awards = response.Awards,
+            BoxOffice = response.BoxOffice,
+            Metascore = response.Metascore,
+            ImdbVotes = response.ImdbVotes,
         };
     }
 }

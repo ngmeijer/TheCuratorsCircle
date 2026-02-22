@@ -4,7 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 interface IconTextButtonProps {
     iconSource: any;
-    text: number;
+    text: string;
     iconSize: number;
     containerStyle?: ViewStyle;
     iconStyle?: TextStyle;

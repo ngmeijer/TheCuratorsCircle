@@ -11,4 +11,13 @@ public class MovieDto
     public string RuntimeInMinutes { get; set; }
     public string Language { get; set; }
     public string Rating { get; set; }
+    public string? Director { get; set; }
+    public string? Actors { get; set; }
+    public string? Writer { get; set; }
+    public string? Rated { get; set; }
+    public string? Country { get; set; }
+    public string? Awards { get; set; }
+    public string? BoxOffice { get; set; }
+    public string? Metascore { get; set; }
+    public string? ImdbVotes { get; set; }
 }   

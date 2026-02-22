@@ -9,6 +9,15 @@ export interface Movie {
     runtimeInMinutes: string;
     language: string;
     rating: number;
+    director?: string;
+    actors?: string;
+    writer?: string;
+    rated?: string;
+    country?: string;
+    awards?: string;
+    boxOffice?: string;
+    metascore?: string;
+    imdbVotes?: string;
 }
 
 export interface CollectionDto {
