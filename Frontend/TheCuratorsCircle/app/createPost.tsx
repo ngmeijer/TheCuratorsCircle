@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -30,6 +30,12 @@ const CATEGORIES: { id: MediaCategory; label: string; icon: string }[] = [
 export default function CreatePost() {
     const navigation = useNavigation();
     const [step, setStep] = useState<Step>('category');
+    const stepRef = useRef(step);
+    
+    useEffect(() => {
+        stepRef.current = step;
+    }, [step]);
+
     const [category, setCategory] = useState<MediaCategory | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<MediaSearchResult[]>([]);
@@ -38,14 +44,34 @@ export default function CreatePost() {
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
 
+    const handleBack = () => {
+        console.log('handleBack called, step:', stepRef.current);
+        if (stepRef.current === 'category') {
+            router.back();
+        } else if (stepRef.current === 'search') {
+            setStep('category');
+            setCategory(null);
+        } else if (stepRef.current === 'select') {
+            setStep('search');
+            setSearchResults([]);
+        } else if (stepRef.current === 'caption') {
+            setStep('select');
+            setCaption('');
+        }
+    };
+
     useEffect(() => {
         const handleBackPress = (e: any) => {
-            e.preventDefault();
-            handleBack();
+            if (stepRef.current !== 'category') {
+                e.preventDefault();
+                handleBack();
+            }
         };
         
-        const subscription = navigation.addListener('beforeRemove', handleBackPress);
-        return () => subscription.remove();
+        navigation.addListener('beforeRemove', handleBackPress);
+        return () => {
+            navigation.removeListener('beforeRemove', handleBackPress);
+        };
     }, [navigation, step]);
 
     const handleCategorySelect = (cat: MediaCategory) => {
@@ -102,21 +128,6 @@ export default function CreatePost() {
             Alert.alert('Error', 'Failed to create post');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleBack = () => {
-        if (step === 'search') {
-            setStep('category');
-            setCategory(null);
-        } else if (step === 'select') {
-            setStep('search');
-            setSearchResults([]);
-        } else if (step === 'caption') {
-            setStep('select');
-            setCaption('');
-        } else {
-            router.back();
         }
     };
 
