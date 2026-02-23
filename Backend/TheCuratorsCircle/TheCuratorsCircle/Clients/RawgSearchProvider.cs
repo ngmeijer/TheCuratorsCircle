@@ -16,7 +16,7 @@ public class RawgSearchProvider : IMediaSearchProvider
         _config = config;
     }
 
-    public async Task<List<MediaSearchResult>> SearchAsync(string query)
+    public async Task<List<MediaSearchResult>> SearchAsync(string query, string? mediaType = null)
     {
         var apiKey = _config["RAWG_API_KEY"];
         if (string.IsNullOrEmpty(apiKey))

@@ -3,7 +3,7 @@ namespace TheCuratorsCircle.Clients;
 public interface IMediaSearchProvider
 {
     string MediaType { get; }
-    Task<List<MediaSearchResult>> SearchAsync(string query);
+    Task<List<MediaSearchResult>> SearchAsync(string query, string? mediaType = null);
     Task<MediaSearchResult?> GetByIdAsync(string id);
 }
 

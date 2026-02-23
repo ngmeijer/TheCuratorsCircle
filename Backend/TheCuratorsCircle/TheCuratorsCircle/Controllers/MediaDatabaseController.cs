@@ -34,7 +34,7 @@ public class MediaDatabaseController : ControllerBase
             return BadRequest(new { message = $"Unsupported media type: {mediaType}" });
         }
 
-        var results = await provider.SearchAsync(query);
+        var results = await provider.SearchAsync(query, mediaType);
         
         return Ok(results);
     }

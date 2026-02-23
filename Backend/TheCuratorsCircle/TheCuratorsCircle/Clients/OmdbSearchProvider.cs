@@ -17,7 +17,7 @@ public class OmdbSearchProvider : IMediaSearchProvider
         _config = config;
     }
 
-    public async Task<List<MediaSearchResult>> SearchAsync(string query)
+    public async Task<List<MediaSearchResult>> SearchAsync(string query, string? mediaType = null)
     {
         var apiKey = _config["OMDB_API_KEY"];
         if (string.IsNullOrEmpty(apiKey))
@@ -36,14 +36,21 @@ public class OmdbSearchProvider : IMediaSearchProvider
         if (searchResult?.Search == null || searchResult.Response == "False")
             return new List<MediaSearchResult>();
 
-        return searchResult.Search.Select(m => new MediaSearchResult
+        var results = searchResult.Search.Select(m => new MediaSearchResult
         {
             Id = m.ImdbID ?? "",
             Title = m.Title ?? "",
             Year = m.Year ?? "",
             Type = m.Type ?? "movie",
             PosterUrl = m.Poster ?? ""
-        }).ToList();
+        });
+
+        if (!string.IsNullOrEmpty(mediaType))
+        {
+            results = results.Where(r => r.Type.Equals(mediaType, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return results.ToList();
     }
 
     public async Task<MediaSearchResult?> GetByIdAsync(string id)
