@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -13,7 +13,7 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { searchMedia, createPost, MediaCategory, MediaSearchResult, CreatePostPayload } from '@/api/databaseClient';
 
@@ -28,6 +28,7 @@ const CATEGORIES: { id: MediaCategory; label: string; icon: string }[] = [
 ];
 
 export default function CreatePost() {
+    const navigation = useNavigation();
     const [step, setStep] = useState<Step>('category');
     const [category, setCategory] = useState<MediaCategory | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +37,16 @@ export default function CreatePost() {
     const [caption, setCaption] = useState('');
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
+
+    useEffect(() => {
+        const handleBackPress = (e: any) => {
+            e.preventDefault();
+            handleBack();
+        };
+        
+        const subscription = navigation.addListener('beforeRemove', handleBackPress);
+        return () => subscription.remove();
+    }, [navigation, step]);
 
     const handleCategorySelect = (cat: MediaCategory) => {
         setCategory(cat);
