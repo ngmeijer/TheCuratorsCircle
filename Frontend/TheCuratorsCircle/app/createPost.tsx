@@ -108,15 +108,9 @@ export default function CreatePost() {
         setLoading(true);
         try {
             const payload: CreatePostPayload = {
-                imageUrl: selectedMedia.posterUrl || '',
                 caption: caption.trim(),
                 mediaType: selectedMedia.type || category || 'movie',
                 mediaId: selectedMedia.id,
-                mediaMetadata: {
-                    title: selectedMedia.title,
-                    posterUrl: selectedMedia.posterUrl || '',
-                    releaseYear: selectedMedia.year,
-                },
             };
 
             await createPost(payload);

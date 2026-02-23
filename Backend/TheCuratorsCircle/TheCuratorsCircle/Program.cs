@@ -17,6 +17,7 @@ builder.Services.AddHttpClient<RawgSearchProvider>();
 builder.Services.AddSingleton<OmdbSearchProvider>();
 builder.Services.AddSingleton<RawgSearchProvider>();
 builder.Services.AddSingleton<MediaSearchProviderFactory>();
+builder.Services.AddSingleton<FirestoreClient>();
 builder.Services.AddSingleton<PostDataSeeder>();
 builder.Services.AddControllers();
 

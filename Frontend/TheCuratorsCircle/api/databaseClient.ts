@@ -117,17 +117,9 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
 }
 
 export interface CreatePostPayload {
-    imageUrl: string;
     caption: string;
     mediaType: string;
     mediaId: string;
-    mediaMetadata?: {
-        title: string;
-        posterUrl: string;
-        genre?: string;
-        plot?: string;
-        releaseYear?: string;
-    };
 }
 
 export async function createPost(payload: CreatePostPayload): Promise<any> {

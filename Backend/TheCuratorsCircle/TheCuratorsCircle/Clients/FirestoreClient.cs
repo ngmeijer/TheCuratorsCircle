@@ -8,7 +8,7 @@ public class FirestoreClient
 
     public FirestoreClient()
     {
-        _db = FirestoreDb.Create("thecuratorscircle");
+        _db = FirestoreDb.Create("the-curator-s-circle");
     }
 
     public FirestoreDb Database => _db;

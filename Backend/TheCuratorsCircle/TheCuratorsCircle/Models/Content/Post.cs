@@ -11,9 +11,6 @@ public class Post
     [FirestoreProperty("userId")]
     public string UserId { get; set; }
 
-    [FirestoreProperty("imageUrl")]
-    public string ImageUrl { get; set; }
-
     [FirestoreProperty("caption")]
     public string Caption { get; set; }
 
@@ -22,9 +19,6 @@ public class Post
 
     [FirestoreProperty("mediaId")]
     public string MediaId { get; set; }
-
-    [FirestoreProperty("mediaMetadata")]
-    public MediaDto? MediaMetadata { get; set; }
 
     [FirestoreProperty("createdAt")]
     public DateTime CreatedAt { get; set; }

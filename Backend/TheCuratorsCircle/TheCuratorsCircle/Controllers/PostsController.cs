@@ -10,13 +10,11 @@ namespace TheCuratorsCircle.Controllers;
 public class PostsController : ControllerBase
 {
     private readonly FirestoreClient _firestore;
-    private readonly OmdbClient _omdbClient;
     private readonly ILogger<PostsController> _logger;
 
-    public PostsController(FirestoreClient firestore, OmdbClient omdbClient, ILogger<PostsController> logger)
+    public PostsController(FirestoreClient firestore, ILogger<PostsController> logger)
     {
         _firestore = firestore;
-        _omdbClient = omdbClient;
         _logger = logger;
     }
 
@@ -33,37 +31,13 @@ public class PostsController : ControllerBase
 
         var userId = "test-user-id";
 
-        var mediaMetadata = request.MediaMetadata;
-        if (mediaMetadata == null && !string.IsNullOrEmpty(request.MediaId))
-        {
-            var media = await _omdbClient.FetchMediaAsync(request.MediaId);
-            if (media != null)
-            {
-                mediaMetadata = new MediaDto
-                {
-                    Title = media.Title,
-                    Genre = media.Genre,
-                    Plot = media.Plot,
-                    PosterUrl = media.Poster,
-                    ReleaseYear = media.Year,
-                    RuntimeInMinutes = media.Runtime,
-                    Language = media.Language,
-                    Rating = media.ImdbRating,
-                    MediaType = media.Type ?? "movie",
-                    TotalSeasons = media.TotalSeasons
-                };
-            }
-        }
-
         var post = new Post
         {
             Id = Guid.CreateVersion7().ToString(),
             UserId = userId,
-            ImageUrl = request.ImageUrl,
             Caption = request.Caption,
             MediaType = request.MediaType,
             MediaId = request.MediaId,
-            MediaMetadata = mediaMetadata,
             CreatedAt = DateTime.UtcNow,
             LikeCount = 0,
             CommentCount = 0,
