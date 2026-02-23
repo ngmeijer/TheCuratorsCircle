@@ -22,6 +22,7 @@ export default function RootLayout() {
             <Stack.Screen name="login" />
             <Stack.Screen name="profile" />
             <Stack.Screen name="postDetails" />
+            <Stack.Screen name="createPost" />
             <Stack.Screen name="(tabs)" />
         </Stack>
     );

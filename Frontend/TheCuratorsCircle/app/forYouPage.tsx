@@ -1,4 +1,4 @@
-﻿import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator} from 'react-native';
 import Post from '../components/Post';
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -68,7 +68,7 @@ export default function ForYouPage() {
                     <Ionicons name="albums" size={28} />
                 </Pressable>
 
-                <Pressable style={styles.button} onPress={() => console.log('Google')}>
+                <Pressable style={styles.button} onPress={() => router.push('/createPost')}>
                     <Ionicons name="create" size={28} />
                 </Pressable>
 
