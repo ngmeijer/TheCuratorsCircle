@@ -1,6 +1,6 @@
 import {ActivityIndicator, Image, ScrollView, StyleSheet, Text, View, Pressable} from "react-native";
 import React, {useEffect, useState} from "react";
-import {getPost} from "../api/databaseClient"
+import {getPost, getMediaById, MediaSearchResult} from "../api/databaseClient"
 import { useLocalSearchParams } from 'expo-router';
 import { PostDto } from "@/DTOs/PostDto";
 import { IconTextButton } from "@/components/IconTextButton";
@@ -11,6 +11,7 @@ type TabType = 'details' | 'discussion' | 'collections' | 'rating';
 export default function PostDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [postData, setPostData] = useState<PostDto | null>(null);
+    const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('details');
     const router = useRouter();
@@ -22,6 +23,11 @@ export default function PostDetails() {
                 console.log("Fetching post data for id:", id);
                 const data = await getPost(id);
                 setPostData(data);
+
+                if (data?.mediaId && data?.mediaType) {
+                    const mediaResult = await getMediaById(data.mediaId, data.mediaType);
+                    setMedia(mediaResult);
+                }
             } catch (error) {
                 console.error("Fetch error:", error);
             } finally {
@@ -35,9 +41,9 @@ export default function PostDetails() {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'details':
-                return <DetailsTab postData={postData} />;
+                return <DetailsTab media={media} />;
             case 'discussion':
-                return <DiscussionTab />;
+                return <DiscussionTab postData={postData} />;
             case 'collections':
                 return <CollectionsTab />;
             case 'rating':
@@ -70,31 +76,32 @@ export default function PostDetails() {
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.mediaStatsContainer}>
-                    <Image
-                        source={{ uri: postData.mediaData.posterUrl }}
-                        style={styles.mediaBanner}
-                    />
+                    {media?.posterUrl && (
+                        <Image
+                            source={{ uri: media.posterUrl }}
+                            style={styles.mediaBanner}
+                        />
+                    )}
                     <View style={styles.gradientOverlay} />
-                    <Text style={styles.mediaTitle}>{postData.mediaData.title}</Text>
+                    <Text style={styles.mediaTitle}>{media?.title || 'Unknown'}</Text>
                     <View style={styles.heroSection}>
-                        <Text style={styles.heroText}>{postData.mediaData.releaseYear}</Text>
+                        <Text style={styles.heroText}>{media?.year || 'N/A'}</Text>
                         <View style={styles.dot} />
-                        <Text style={styles.heroText}>{postData.mediaData.genre}</Text>
-                        <View style={styles.dot} />
-                        <Text style={styles.heroText}>
-                            {postData.mediaData.mediaType === 'series' 
-                                ? `${postData.mediaData.totalSeasons} seasons` 
-                                : postData.mediaData.runtimeInMinutes}
-                        </Text>
+                        <Text style={styles.heroText}>{media?.type || postData.mediaType}</Text>
                     </View>
-                    <View style={styles.ratingBadge}>
-                        <Text style={styles.ratingText}>{postData.mediaData.rating}</Text>
-                        <Text style={styles.ratingMax}>/10</Text>
-                    </View>
+                    {media?.rating && (
+                        <View style={styles.ratingBadge}>
+                            <Text style={styles.ratingText}>{media.rating}</Text>
+                            <Text style={styles.ratingMax}>/10</Text>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.postHeader}>
-                    <Text style={styles.postName}>{postData.name}</Text>
+                    <Text style={styles.postTitle}>{postData.title}</Text>
+                    {postData.caption && (
+                        <Text style={styles.postCaption}>{postData.caption}</Text>
+                    )}
                     <Text style={styles.createdAt}>{new Date(postData.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
@@ -168,86 +175,35 @@ function TabButton({ title, active, onPress }: { title: string; active: boolean;
     );
 }
 
-function DetailsTab({ postData }: { postData: PostDto | null }) {
-    if (!postData) return null;
-
-    const { mediaData } = postData;
+function DetailsTab({ media }: { media: MediaSearchResult | null }) {
+    if (!media) return null;
 
     return (
         <View style={styles.detailsContainer}>
-            <Text style={styles.sectionTitle}>Plot</Text>
-            <Text style={styles.plotText}>{mediaData.plot || 'No plot available.'}</Text>
+            {media.plot && (
+                <>
+                    <Text style={styles.sectionTitle}>Plot</Text>
+                    <Text style={styles.plotText}>{media.plot}</Text>
+                </>
+            )}
             
-            {mediaData.director && (
+            {media.genre && (
                 <>
-                    <Text style={styles.sectionTitle}>Director</Text>
-                    <Text style={styles.infoText}>{mediaData.director}</Text>
-                </>
-            )}
-
-            {mediaData.totalSeasons && (
-                <>
-                    <Text style={styles.sectionTitle}>Seasons</Text>
-                    <Text style={styles.infoText}>{mediaData.totalSeasons}</Text>
-                </>
-            )}
-
-            {mediaData.actors && (
-                <>
-                    <Text style={styles.sectionTitle}>Cast</Text>
-                    <Text style={styles.infoText} numberOfLines={3}>{mediaData.actors}</Text>
-                </>
-            )}
-
-            {mediaData.writer && (
-                <>
-                    <Text style={styles.sectionTitle}>Writer</Text>
-                    <Text style={styles.infoText}>{mediaData.writer}</Text>
-                </>
-            )}
-
-            {(mediaData.boxOffice && mediaData.boxOffice !== 'N/A') && (
-                <>
-                    <Text style={styles.sectionTitle}>Box Office</Text>
-                    <Text style={styles.infoText}>{mediaData.boxOffice}</Text>
-                </>
-            )}
-
-            {(mediaData.awards && mediaData.awards !== 'N/A') && (
-                <>
-                    <Text style={styles.sectionTitle}>Awards</Text>
-                    <Text style={styles.infoText}>{mediaData.awards}</Text>
-                </>
-            )}
-
-            {(mediaData.metascore || mediaData.imdbVotes) && (
-                <>
-                    <Text style={styles.sectionTitle}>Scores</Text>
-                    <View style={styles.scoreCard}>
-                        {mediaData.metascore && (
-                            <View style={styles.scoreItem}>
-                                <Text style={styles.scoreValue}>{mediaData.metascore}</Text>
-                                <Text style={styles.scoreLabel}>Metascore</Text>
-                            </View>
-                        )}
-                        {mediaData.imdbVotes && (
-                            <View style={styles.scoreItem}>
-                                <Text style={styles.scoreValue}>{mediaData.imdbVotes}</Text>
-                                <Text style={styles.scoreLabel}>IMDb Votes</Text>
-                            </View>
-                        )}
-                    </View>
+                    <Text style={styles.sectionTitle}>Genre</Text>
+                    <Text style={styles.infoText}>{media.genre}</Text>
                 </>
             )}
         </View>
     );
 }
 
-function DiscussionTab() {
+function DiscussionTab({ postData }: { postData: PostDto | null }) {
+    if (!postData) return null;
+
     return (
         <View style={styles.emptyTabContainer}>
             <Text style={styles.emptyTabTitle}>No discussions yet</Text>
-            <Text style={styles.emptyTabText}>Be the first to start a discussion about this!</Text>
+            <Text style={styles.emptyTabText}>Be the first to start a discussion!</Text>
         </View>
     );
 }
@@ -375,15 +331,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 20,
     },
-    postName: {
+    postTitle: {
         color: "#FFFFFF",
         fontSize: 24,
         fontWeight: "600",
     },
+    postCaption: {
+        color: "#85D6FF",
+        fontSize: 14,
+        marginTop: 8,
+        lineHeight: 20,
+    },
     createdAt: {
         fontSize: 14,
         color: "#85D6FF",
-        marginTop: 4,
+        marginTop: 8,
     },
     engagementBar: {
         marginVertical: 16,
@@ -453,83 +415,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 22,
         marginBottom: 16,
-    },
-    scoreCard: {
-        flexDirection: 'row',
-        backgroundColor: '#1a1f2e',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 20,
-        gap: 24,
-    },
-    scoreItem: {
-        alignItems: 'center',
-    },
-    scoreValue: {
-        color: "#FFFFFF",
-        fontSize: 20,
-        fontWeight: "700",
-    },
-    scoreLabel: {
-        color: "#85D6FF",
-        fontSize: 12,
-        marginTop: 4,
-    },
-    detailCard: {
-        backgroundColor: '#1a1f2e',
-        borderRadius: 12,
-        overflow: 'hidden',
-        marginBottom: 20,
-    },
-    detailRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-    },
-    detailRowBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#2A2E35',
-    },
-    detailLabel: {
-        color: '#85D6FF',
-        fontSize: 14,
-    },
-    detailValue: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: "500",
-    },
-    userRatingCard: {
-        backgroundColor: '#1a1f2e',
-        borderRadius: 12,
-        padding: 20,
-        alignItems: 'center',
-    },
-    ratingPrompt: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: "500",
-        marginBottom: 16,
-    },
-    starsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    starButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#2A2E35',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    starText: {
-        color: '#FFB454',
-        fontSize: 12,
-        fontWeight: "600",
     },
     emptyTabContainer: {
         alignItems: 'center',

@@ -35,6 +35,7 @@ public class PostsController : ControllerBase
         {
             Id = Guid.CreateVersion7().ToString(),
             UserId = userId,
+            Title = request.Title,
             Caption = request.Caption,
             MediaType = request.MediaType,
             MediaId = request.MediaId,

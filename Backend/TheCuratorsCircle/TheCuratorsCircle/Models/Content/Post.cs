@@ -11,6 +11,9 @@ public class Post
     [FirestoreProperty("userId")]
     public string UserId { get; set; }
 
+    [FirestoreProperty("title")]
+    public string Title { get; set; }
+
     [FirestoreProperty("caption")]
     public string Caption { get; set; }
 

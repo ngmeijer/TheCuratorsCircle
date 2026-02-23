@@ -5,6 +5,8 @@ namespace TheCuratorsCircle.Models.Content;
 public class CreatePostRequest
 {
     [Required]
+    public string Title { get; set; }
+
     public string Caption { get; set; }
 
     [Required]

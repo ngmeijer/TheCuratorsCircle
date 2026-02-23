@@ -40,6 +40,7 @@ export default function CreatePost() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<MediaSearchResult[]>([]);
     const [selectedMedia, setSelectedMedia] = useState<MediaSearchResult | null>(null);
+    const [title, setTitle] = useState('');
     const [caption, setCaption] = useState('');
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
@@ -56,6 +57,7 @@ export default function CreatePost() {
             setSearchResults([]);
         } else if (stepRef.current === 'caption') {
             setStep('select');
+            setTitle('');
             setCaption('');
         }
     };
@@ -100,14 +102,15 @@ export default function CreatePost() {
     };
 
     const handleSubmit = async () => {
-        if (!selectedMedia || !caption.trim()) {
-            Alert.alert('Error', 'Please add a caption');
+        if (!selectedMedia || !title.trim()) {
+            Alert.alert('Error', 'Please add a title');
             return;
         }
 
         setLoading(true);
         try {
             const payload: CreatePostPayload = {
+                title: title.trim(),
                 caption: caption.trim(),
                 mediaType: selectedMedia.type || category || 'movie',
                 mediaId: selectedMedia.id,
@@ -216,7 +219,7 @@ export default function CreatePost() {
             style={styles.content}
         >
             <ScrollView>
-                <Text style={styles.title}>Add a caption</Text>
+                <Text style={styles.title}>Create your post</Text>
                 {selectedMedia && (
                     <View style={styles.previewContainer}>
                         {selectedMedia.posterUrl && selectedMedia.posterUrl !== '' && (
@@ -225,9 +228,19 @@ export default function CreatePost() {
                         <Text style={styles.previewTitle}>{selectedMedia.title}</Text>
                     </View>
                 )}
+                <Text style={styles.fieldLabel}>Title (required)</Text>
+                <TextInput
+                    style={styles.titleInput}
+                    placeholder="A short catchphrase..."
+                    placeholderTextColor="#888"
+                    value={title}
+                    onChangeText={setTitle}
+                    maxLength={100}
+                />
+                <Text style={styles.fieldLabel}>Caption (optional)</Text>
                 <TextInput
                     style={styles.captionInput}
-                    placeholder="Write a caption..."
+                    placeholder="Expand on your title..."
                     placeholderTextColor="#888"
                     value={caption}
                     onChangeText={setCaption}
@@ -428,6 +441,19 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         marginTop: 8,
+    },
+    fieldLabel: {
+        color: '#fff',
+        fontSize: 14,
+        marginBottom: 8,
+        marginTop: 16,
+    },
+    titleInput: {
+        backgroundColor: '#1e293b',
+        borderRadius: 8,
+        padding: 16,
+        color: '#fff',
+        fontSize: 16,
     },
     captionInput: {
         backgroundColor: '#1e293b',

@@ -1,13 +1,11 @@
-import {Media} from "@/DTOs/CollectionDto";
-
 export interface PostDto {
     id: string;
-    name: string;
-    mediaData: Media;
-    createdAt: string;
+    userId: string;
     title: string;
-    category: string;
-    aspectRatio: number;
+    caption: string;
+    mediaType: string;
+    mediaId: string;
+    createdAt: string;
     likeCount: number;
     commentCount: number;
     shareCount: number;

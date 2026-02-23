@@ -30,7 +30,7 @@ export async function getCollections() {
 
 export async function getPosts() {
     console.log("Getting posts from backend");
-    const response = await fetch(`http://${ipadress}:5044/user/posts`, {
+    const response = await fetch(`http://${ipadress}:5044/posts`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -42,7 +42,6 @@ export async function getPosts() {
         try {
             data = await response.json();
         } catch {
-            // Fallback if body is empty or not JSON
             data = { message: "Unknown error."};
         }
 
@@ -51,7 +50,7 @@ export async function getPosts() {
 
     const receivedData = await response.json();
     console.log(
-        "Specific post data received:\n",
+        "Posts data received:\n",
         JSON.stringify(receivedData, null, 2)
     );
     return receivedData;
@@ -59,7 +58,7 @@ export async function getPosts() {
 
 export async function getPost(postId: string){
     console.log("Getting specific post from backend");
-    const response = await fetch(`http://${ipadress}:5044/user/posts/${postId}`, {
+    const response = await fetch(`http://${ipadress}:5044/posts/${postId}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -71,7 +70,6 @@ export async function getPost(postId: string){
         try {
             data = await response.json();
         } catch {
-            // Fallback if body is empty or not JSON
             data = { message: "Unknown error."};
         }
 
@@ -116,7 +114,26 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
     return receivedData;
 }
 
+export async function getMediaById(id: string, mediaType: string = 'movie'): Promise<MediaSearchResult | null> {
+    console.log("Getting media by ID:", id, mediaType);
+    const response = await fetch(`http://${ipadress}:5044/media/media?id=${encodeURIComponent(id)}&mediaType=${encodeURIComponent(mediaType)}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
+
+    if (!response.ok) {
+        console.error("Failed to get media:", response.status);
+        return null;
+    }
+
+    const receivedData = await response.json();
+    return receivedData;
+}
+
 export interface CreatePostPayload {
+    title: string;
     caption: string;
     mediaType: string;
     mediaId: string;
