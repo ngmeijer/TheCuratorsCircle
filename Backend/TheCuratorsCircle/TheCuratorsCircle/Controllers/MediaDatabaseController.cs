@@ -1,11 +1,5 @@
-using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using TheCuratorsCircle.Clients;
-using TheCuratorsCircle.Mappers;
-using TheCuratorsCircle.Models.Content;
 using TheCuratorsCircle.Models.Media;
 
 namespace TheCuratorsCircle.Controllers;
@@ -14,26 +8,61 @@ namespace TheCuratorsCircle.Controllers;
 [Route("media")]
 public class MediaDatabaseController : ControllerBase
 {
-    private APIHTTPClient _apiClient;
-    private IHttpClientFactory _clientFactory;
+    private readonly MediaSearchProviderFactory _providerFactory;
+    private readonly ILogger<MediaDatabaseController> _logger;
     
-    public MediaDatabaseController(IHttpClientFactory httpClientFactory, APIHTTPClient apiHttpApiClient) 
+    public MediaDatabaseController(MediaSearchProviderFactory providerFactory, ILogger<MediaDatabaseController> logger) 
     {
-        _clientFactory = httpClientFactory;
-        _apiClient = apiHttpApiClient;
+        _providerFactory = providerFactory;
+        _logger = logger;
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchMedia([FromQuery] string query, [FromQuery] string mediaType = "movie")
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return BadRequest(new { message = "Query is required." });
+        }
+
+        _logger.LogInformation("SearchMedia request - Query: {Query}, Type: {Type}", query, mediaType);
+
+        var provider = _providerFactory.GetProvider(mediaType);
+        
+        if (provider == null)
+        {
+            return BadRequest(new { message = $"Unsupported media type: {mediaType}" });
+        }
+
+        var results = await provider.SearchAsync(query);
+        
+        return Ok(results);
     }
 
     [HttpGet("media")]
-    public async Task<IActionResult> GetMediaData([FromQuery] MediaRequest request)
+    public async Task<IActionResult> GetMediaData([FromQuery] string id, [FromQuery] string mediaType = "movie")
     {
-        if (!ModelState.IsValid)
-            return BadRequest(new { message = "Invalid data." });
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "ID is required." });
+        }
 
-        var media = await _apiClient.FetchMediaAsync(request.Title);
+        _logger.LogInformation("GetMediaData request - ID: {Id}, Type: {Type}", id, mediaType);
 
+        var provider = _providerFactory.GetProvider(mediaType);
+        
+        if (provider == null)
+        {
+            return BadRequest(new { message = $"Unsupported media type: {mediaType}" });
+        }
+
+        var media = await provider.GetByIdAsync(id);
+        
         if (media == null)
+        {
             return NotFound(new { message = "Media not found" });
+        }
 
-        return Ok(new[] { media });
+        return Ok(media);
     }
 }
