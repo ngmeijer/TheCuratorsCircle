@@ -1,4 +1,7 @@
-import {PostDto} from "@/DTOs/PostDto";
+import {MediaCategory} from "@/api/mediaCategory";
+import {MediaSearchResult} from "@/api/mediaSearchResult";
+import {mediaCache} from "@/api/mediaCache";
+import {CreatePostPayload} from "@/api/createPostPayload";
 
 let ipadress = "100.119.203.57";
 
@@ -84,19 +87,6 @@ export async function getPost(postId: string){
     return receivedData;
 }
 
-export type MediaCategory = 'movie' | 'series' | 'game' | 'book' | 'music';
-
-export interface MediaSearchResult {
-    id: string;
-    title: string;
-    year: string;
-    type: string;
-    posterUrl: string;
-    plot?: string;
-    genre?: string;
-    rating?: number;
-}
-
 export async function searchMedia(query: string, category: MediaCategory = 'movie'): Promise<MediaSearchResult[]> {
     console.log("Searching media:", query, category);
     const response = await fetch(`http://${ipadress}:5044/media/search?query=${encodeURIComponent(query)}&mediaType=${encodeURIComponent(category)}`, {
@@ -113,8 +103,6 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
     const receivedData = await response.json();
     return receivedData;
 }
-
-const mediaCache: Map<string, MediaSearchResult> = new Map();
 
 export async function getMediaById(id: string, mediaType: string = 'movie'): Promise<MediaSearchResult | null> {
     const cacheKey = `${mediaType}:${id}`;
@@ -139,13 +127,6 @@ export async function getMediaById(id: string, mediaType: string = 'movie'): Pro
     const receivedData = await response.json();
     mediaCache.set(cacheKey, receivedData);
     return receivedData;
-}
-
-export interface CreatePostPayload {
-    title: string;
-    caption: string;
-    mediaType: string;
-    mediaId: string;
 }
 
 export async function createPost(payload: CreatePostPayload): Promise<any> {
