@@ -131,18 +131,19 @@ export default function CreatePost() {
     const renderCategory = () => (
         <View style={styles.content}>
             <Text style={styles.title}>What are you sharing?</Text>
-            <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat) => (
+            <FlatList
+                data={CATEGORIES}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
                     <TouchableOpacity
-                        key={cat.id}
-                        style={styles.categoryCard}
-                        onPress={() => handleCategorySelect(cat.id)}
+                        style={styles.categoryRow}
+                        onPress={() => handleCategorySelect(item.id)}
                     >
-                        <Ionicons name={cat.icon as any} size={40} color="#fff" />
-                        <Text style={styles.categoryLabel}>{cat.label}</Text>
+                        <Ionicons name={item.icon as any} size={28} color="#fff" style={styles.categoryIcon} />
+                        <Text style={styles.categoryLabel}>{item.label}</Text>
                     </TouchableOpacity>
-                ))}
-            </View>
+                )}
+            />
         </View>
     );
 
@@ -322,23 +323,20 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 24,
     },
-    categoryGrid: {
+    categoryRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
-    categoryCard: {
-        width: '48%',
-        backgroundColor: '#1e293b',
-        borderRadius: 12,
-        padding: 24,
         alignItems: 'center',
-        marginBottom: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: '#1e2b3a',
+    },
+    categoryIcon: {
+        marginRight: 12,
     },
     categoryLabel: {
         color: '#fff',
         fontSize: 16,
-        marginTop: 8,
     },
     searchContainer: {
         flexDirection: 'row',

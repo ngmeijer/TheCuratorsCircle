@@ -12,6 +12,17 @@
 - Use meaningful commit messages that describe what changed
 - Review diffs before committing
 - **Never commit without explicit user approval** - always ask for approval before making commits
+ 
+### Testing Discipline
+- Before committing any changes, run the test suites for both backend and frontend to prevent pushing bugs.
+- Ensure tests cover new or updated features; add or update tests as part of the implementation.
+- All tests should pass locally before pushing commits.
+- If tests fail, fix the issues and re-run tests until green.
+- Keep tests up to date with functionality; when changing APIs or UI, update tests accordingly.
+- For CI, rely on it to run tests on push, but do not push until local tests pass.
+- Test commands you can use:
+  - Backend: `dotnet test` (in the backend project folder)
+  - Frontend: `npm test` (in the frontend folder) or your project’s test script
 
 ### Code Standards
 - Follow existing code style and conventions in the codebase
