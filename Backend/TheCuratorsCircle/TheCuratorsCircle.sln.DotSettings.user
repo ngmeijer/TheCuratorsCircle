@@ -4,8 +4,10 @@
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="C:\Users\meije\.nuget\packages\firebaseauthentication.net\4.1.0\lib\netstandard2.0\Firebase.Auth.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=21a38633_002Da4c2_002D4985_002Db98c_002Dc3a7233bb6f5/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="LoginFlowTests" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;xUnit::40281F8B-E829-4E3B-B2DC-6BA38044A98A::net9.0::Tests.IntegrationTests.LoginFlowTests&lt;/TestId&gt;&#xD;
-  &lt;/TestAncestor&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=21a38633_002Da4c2_002D4985_002Db98c_002Dc3a7233bb6f5/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="LoginFlowTests" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::40281F8B-E829-4E3B-B2DC-6BA38044A98A::net9.0::Tests.IntegrationTests.LoginFlowTests&lt;/TestId&gt;
+    &lt;TestId&gt;xUnit::40281F8B-E829-4E3B-B2DC-6BA38044A98A::net9.0::TheCuratorsCircle.Tests.MediaProviderFactoryTests&lt;/TestId&gt;
+    &lt;TestId&gt;xUnit::40281F8B-E829-4E3B-B2DC-6BA38044A98A::net9.0::Tests.IntegrationTests.MediaProviderFactoryTests&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
