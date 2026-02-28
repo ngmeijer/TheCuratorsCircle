@@ -1,6 +1,5 @@
 // basic RN test setup
 jest.useFakeTimers();
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 
 // mock expo-router for tests
 jest.mock('expo-router', () => ({
