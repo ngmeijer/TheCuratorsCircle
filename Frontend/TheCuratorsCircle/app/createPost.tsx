@@ -131,19 +131,18 @@ export default function CreatePost() {
     const renderCategory = () => (
         <View style={styles.content}>
             <Text style={styles.title}>What are you sharing?</Text>
-            <FlatList
-                data={CATEGORIES}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
+            <View style={styles.categoryGrid}>
+                {CATEGORIES.map((cat) => (
                     <TouchableOpacity
-                        style={styles.categoryRow}
-                        onPress={() => handleCategorySelect(item.id)}
+                        key={cat.id}
+                        style={styles.categoryCard}
+                        onPress={() => handleCategorySelect(cat.id)}
                     >
-                        <Ionicons name={item.icon as any} size={28} color="#fff" style={styles.categoryIcon} />
-                        <Text style={styles.categoryLabel}>{item.label}</Text>
+                        <Ionicons name={cat.icon as any} size={40} color="#fff" />
+                        <Text style={styles.categoryLabel}>{cat.label}</Text>
                     </TouchableOpacity>
-                )}
-            />
+                ))}
+            </View>
         </View>
     );
 
@@ -323,20 +322,23 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 24,
     },
-    categoryRow: {
+    categoryGrid: {
         flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 4,
-        borderBottomWidth: 1,
-        borderBottomColor: '#1e2b3a',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
-    categoryIcon: {
-        marginRight: 12,
+    categoryCard: {
+        width: '48%',
+        backgroundColor: '#1e293b',
+        borderRadius: 12,
+        padding: 24,
+        alignItems: 'center',
+        marginBottom: 16,
     },
     categoryLabel: {
         color: '#fff',
         fontSize: 16,
+        marginTop: 8,
     },
     searchContainer: {
         flexDirection: 'row',

@@ -114,15 +114,7 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
     return receivedData;
 }
 
-const mediaCache: Map<string, MediaSearchResult> = new Map();
-
 export async function getMediaById(id: string, mediaType: string = 'movie'): Promise<MediaSearchResult | null> {
-    const cacheKey = `${mediaType}:${id}`;
-    
-    if (mediaCache.has(cacheKey)) {
-        return mediaCache.get(cacheKey)!;
-    }
-    
     console.log("Getting media by ID:", id, mediaType);
     const response = await fetch(`http://${ipadress}:5044/media/media?id=${encodeURIComponent(id)}&mediaType=${encodeURIComponent(mediaType)}`, {
         method: "GET",
@@ -137,7 +129,6 @@ export async function getMediaById(id: string, mediaType: string = 'movie'): Pro
     }
 
     const receivedData = await response.json();
-    mediaCache.set(cacheKey, receivedData);
     return receivedData;
 }
 
