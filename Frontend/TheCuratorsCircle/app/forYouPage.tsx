@@ -1,5 +1,5 @@
-﻿import React, {useEffect, useState} from 'react';
-import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator} from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator, RefreshControl} from 'react-native';
 import Post from '../components/Post';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
@@ -9,24 +9,30 @@ import {getPosts} from "@/api/databaseClient";
 export function useProfilePosts() {
     const [posts, setPosts] = useState<PostDto[]>([]);
     const [loadingPosts, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        async function loadPosts() {
-            setLoading(true);
-            try {
-                const posts = await getPosts();
-                setPosts(posts);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+    const loadPosts = useCallback(async () => {
+        try {
+            const posts = await getPosts();
+            setPosts(posts);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
-
-        loadPosts();
     }, []);
 
-    return { posts, loadingPosts };
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await loadPosts();
+        setRefreshing(false);
+    }, [loadPosts]);
+
+    useEffect(() => {
+        loadPosts();
+    }, [loadPosts]);
+
+    return { posts, loadingPosts, refreshing, onRefresh };
 }
 
 function onPressPost() {
@@ -34,14 +40,13 @@ function onPressPost() {
 }
 
 export default function ForYouPage() {
-    const { posts, loadingPosts } = useProfilePosts();
+    const { posts, loadingPosts, refreshing, onRefresh } = useProfilePosts();
 
     if (loadingPosts) return <ActivityIndicator size="large" color="#fff" />;
-    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
+    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center', marginTop: 50 }}>No posts</Text>;
 
     return (
         <View style={styles.container}>
-            {/* Optional header */}
             <View style={styles.header}>
                 <Text style={styles.logo}>For You</Text>
             </View>
@@ -49,8 +54,8 @@ export default function ForYouPage() {
             <FlatList
                 key="posts"
                 data={posts}
-                numColumns={2}
                 keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContent}
                 renderItem={({ item }) => (
                     <Post
                         item={item}
@@ -62,13 +67,20 @@ export default function ForYouPage() {
                         }
                     />
                 )}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#fff"
+                    />
+                }
             />
             <View style={styles.quickAccessMenu}>
                 <Pressable style={styles.button} onPress={() => console.log('Google')}>
                     <Ionicons name="albums" size={28} />
                 </Pressable>
 
-                <Pressable style={styles.button} onPress={() => console.log('Google')}>
+                <Pressable style={styles.button} onPress={() => router.push('/createPost')}>
                     <Ionicons name="create" size={28} />
                 </Pressable>
 
@@ -96,8 +108,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
     },
+    listContent: {
+        paddingBottom: 100,
+    },
     separator: {
-        height: 25, // small gap between posts
+        height: 25,
     },
     quickAccessMenu: {
         position: 'absolute',
@@ -109,8 +124,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         padding: 6,
         borderRadius: 12,
-        elevation: 5,      // Android shadow
-        shadowColor: '#000', // iOS shadow
+        elevation: 5,
+        shadowColor: '#000',
         shadowOpacity: 0.2,
         shadowRadius: 6,
     },

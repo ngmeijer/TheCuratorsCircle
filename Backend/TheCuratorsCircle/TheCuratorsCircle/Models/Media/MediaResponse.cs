@@ -82,3 +82,12 @@ public class MediaResponse
         [JsonPropertyName("Response")]
         public string Response { get; set; }
 }
+
+public class Rating
+{
+        [JsonPropertyName("Source")]
+        public string Source { get; set; }
+
+        [JsonPropertyName("Value")]
+        public string Value { get; set; }
+}

@@ -11,6 +11,7 @@
 - Always check `git status` before committing to ensure no sensitive files are staged
 - Use meaningful commit messages that describe what changed
 - Review diffs before committing
+- **Never commit without explicit user approval** - always ask for approval before making commits
 
 ### Code Standards
 - Follow existing code style and conventions in the codebase

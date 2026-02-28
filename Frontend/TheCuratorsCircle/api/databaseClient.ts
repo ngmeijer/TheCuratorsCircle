@@ -30,7 +30,7 @@ export async function getCollections() {
 
 export async function getPosts() {
     console.log("Getting posts from backend");
-    const response = await fetch(`http://${ipadress}:5044/user/posts`, {
+    const response = await fetch(`http://${ipadress}:5044/posts`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -42,7 +42,34 @@ export async function getPosts() {
         try {
             data = await response.json();
         } catch {
-            // Fallback if body is empty or not JSON
+            data = { message: "Unknown error."};
+        }
+
+        throw new Error(data.message);
+    }
+
+    const receivedData = await response.json();
+    console.log(
+        "Posts data received:\n",
+        JSON.stringify(receivedData, null, 2)
+    );
+    return receivedData;
+}
+
+export async function getPost(postId: string){
+    console.log("Getting specific post from backend");
+    const response = await fetch(`http://${ipadress}:5044/posts/${postId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
+
+    if(!response.ok) {
+        let data;
+        try {
+            data = await response.json();
+        } catch {
             data = { message: "Unknown error."};
         }
 
@@ -57,31 +84,82 @@ export async function getPosts() {
     return receivedData;
 }
 
-export async function getPost(postId: string){
-    console.log("Getting specific post from backend");
-    const response = await fetch(`http://${ipadress}:5044/user/posts/${postId}`, {
+export type MediaCategory = 'movie' | 'series' | 'game' | 'book' | 'music';
+
+export interface MediaSearchResult {
+    id: string;
+    title: string;
+    year: string;
+    type: string;
+    posterUrl: string;
+    plot?: string;
+    genre?: string;
+    rating?: number;
+}
+
+export async function searchMedia(query: string, category: MediaCategory = 'movie'): Promise<MediaSearchResult[]> {
+    console.log("Searching media:", query, category);
+    const response = await fetch(`http://${ipadress}:5044/media/search?query=${encodeURIComponent(query)}&mediaType=${encodeURIComponent(category)}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
         }
     });
 
-    if(!response.ok) {
+    if (!response.ok) {
+        return [];
+    }
+
+    const receivedData = await response.json();
+    return receivedData;
+}
+
+export async function getMediaById(id: string, mediaType: string = 'movie'): Promise<MediaSearchResult | null> {
+    console.log("Getting media by ID:", id, mediaType);
+    const response = await fetch(`http://${ipadress}:5044/media/media?id=${encodeURIComponent(id)}&mediaType=${encodeURIComponent(mediaType)}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
+
+    if (!response.ok) {
+        console.error("Failed to get media:", response.status);
+        return null;
+    }
+
+    const receivedData = await response.json();
+    return receivedData;
+}
+
+export interface CreatePostPayload {
+    title: string;
+    caption: string;
+    mediaType: string;
+    mediaId: string;
+}
+
+export async function createPost(payload: CreatePostPayload): Promise<any> {
+    console.log("Creating post:", payload);
+    const response = await fetch(`http://${ipadress}:5044/posts`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
         let data;
         try {
             data = await response.json();
         } catch {
-            // Fallback if body is empty or not JSON
-            data = { message: "Unknown error."};
+            data = { message: "Unknown error." };
         }
-
         throw new Error(data.message);
     }
 
     const receivedData = await response.json();
-    console.log(
-        "Specific post data received:\n",
-        JSON.stringify(receivedData, null, 2)
-    );
+    console.log("Post created:", receivedData);
     return receivedData;
 }

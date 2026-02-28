@@ -1,99 +1,137 @@
-﻿import React from 'react';
-import { View, Image, StyleSheet, Text, Pressable } from 'react-native';
-import {Movie} from "@/DTOs/CollectionDto";
+import React, { useState, useEffect } from 'react';
+import { View, Image, StyleSheet, Text, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { PostDto } from '@/DTOs/PostDto';
+import { getMediaById, MediaSearchResult } from '@/api/databaseClient';
 
 interface PostProps {
-    item: {
-        id: string;
-        name: string;
-        mediaData: Movie;
-        createdAt: string;
-        category: string;
-        aspectRatio: number;
-        likeCount: number;
-        commentCount: number;
-        shareCount: number;
-    };
+    item: PostDto;
     onPress?: () => void;
 }
 
 export default function Post({ item, onPress }: PostProps) {
+    const { width } = useWindowDimensions();
+    const [media, setMedia] = useState<MediaSearchResult | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchMedia() {
+            try {
+                const result = await getMediaById(item.mediaId, item.mediaType);
+                setMedia(result);
+            } catch (error) {
+                console.error('Error fetching media:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchMedia();
+    }, [item.mediaId, item.mediaType]);
+
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <ActivityIndicator size="large" color="#fff" />
+            </View>
+        );
+    }
+
     return (
         <Pressable
             onPress={onPress}
             style={({ pressed }) => [
-                styles.collectionContainer,
-                { opacity: pressed ? 0.8 : 1 } // Visual feedback on touch
+                styles.container,
+                { width: width - 32, opacity: pressed ? 0.8 : 1 }
             ]}
         >
             <View style={styles.imageWrapper}>
-                <Image
-                    source={{ uri: item.mediaData.posterUrl }}
-                    style={styles.image}
-                />
-                <View style={styles.nameOverlay}>
-                    <Text style={styles.title}>{item.name}</Text>
-                    <Text style={styles.title}>{item.mediaData.title}</Text>
-                    <Text style={styles.category}>{item.category}</Text>
+                {media?.posterUrl ? (
+                    <Image
+                        source={{ uri: media.posterUrl }}
+                        style={styles.image}
+                    />
+                ) : (
+                    <View style={styles.placeholder}>
+                        <Text style={styles.placeholderText}>{media?.title || item.mediaType}</Text>
+                    </View>
+                )}
+                <View style={styles.overlay}>
+                    <Text style={styles.title}>{item.title}</Text>
+                    {item.caption && (
+                        <Text style={styles.caption} numberOfLines={2}>{item.caption}</Text>
+                    )}
                 </View>
-
-                <View style={styles.likeCountOverlay}>
-                    <Text style={styles.likeCount}>{item.likeCount} likes</Text>
-                </View>
+            </View>
+            
+            <View style={styles.footer}>
+                <Text style={styles.mediaType}>{item.mediaType}</Text>
+                <Text style={styles.likeCount}>{item.likeCount} likes</Text>
             </View>
         </Pressable>
     );
 }
 
 const styles = StyleSheet.create({
-    collectionContainer: {
-        alignItems: 'center',
-        flex: 1,
-        marginVertical: 5,
+    container: {
+        marginVertical: 8,
+        marginHorizontal: 16,
+        backgroundColor: '#1e293b',
+        borderRadius: 12,
+        overflow: 'hidden',
     },
     imageWrapper: {
-        position:'relative',
-        borderRadius:12,
-        overflow: 'hidden',
+        position: 'relative',
+        aspectRatio: 1,
         width: '100%',
-        aspectRatio: 1
     },
     image: {
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
-        borderRadius: 15
     },
-    nameOverlay: {
-        position: 'absolute',
-        width: '90%',
-        height: 'auto',
-        top: 8,
-        left: 16,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal:8,
-        paddingVertical:4,
-        borderRadius:12,
+    placeholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#2d3a4f',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    likeCountOverlay: {
+    placeholderText: {
+        color: '#666',
+        fontSize: 14,
+        textAlign: 'center',
+        padding: 16,
+    },
+    overlay: {
         position: 'absolute',
-        bottom: 8,
-        right: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal:8,
-        paddingVertical:4,
-        borderRadius:12,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 12,
     },
     title: {
-        color:'white',
-        fontSize: 24,
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    caption: {
+        color: '#ccc',
+        fontSize: 14,
+        marginTop: 4,
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 12,
+    },
+    mediaType: {
+        color: '#3b82f6',
+        fontSize: 12,
+        textTransform: 'capitalize',
     },
     likeCount: {
-        color: 'white',
-        padding: 5,
-        borderRadius: 6
+        color: '#888',
+        fontSize: 12,
     },
-    category: {
-        color: 'white',
-    }
 });

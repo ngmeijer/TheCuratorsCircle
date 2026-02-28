@@ -1,14 +1,15 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using TheCuratorsCircle.Models.Media;
 
 namespace TheCuratorsCircle.Clients;
 
-public class APIHTTPClient
+public class OmdbClient
 {
     private HttpClient _client;
     private readonly IConfiguration _config;
     
-    public APIHTTPClient(HttpClient client, IConfiguration config)
+    public OmdbClient(HttpClient client, IConfiguration config)
     {
         _client = client;
         _config = config;
@@ -59,4 +60,16 @@ public class APIHTTPClient
 
         return searchResult.Search;
     }
+}
+
+public class MediaSearchResponse
+{
+    [JsonPropertyName("Search")]
+    public List<MediaResponse>? Search { get; set; }
+
+    [JsonPropertyName("totalResults")]
+    public string? TotalResults { get; set; }
+
+    [JsonPropertyName("Response")]
+    public string Response { get; set; }
 }

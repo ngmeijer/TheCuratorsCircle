@@ -11,6 +11,13 @@ Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", @"./firebas
 builder.Services.AddSingleton(FirebaseApp.Create());
 
 builder.Services.AddHttpClient<APIHTTPClient>();
+builder.Services.AddHttpClient<RawgClient>();
+builder.Services.AddHttpClient<OmdbSearchProvider>();
+builder.Services.AddHttpClient<RawgSearchProvider>();
+builder.Services.AddSingleton<OmdbSearchProvider>();
+builder.Services.AddSingleton<RawgSearchProvider>();
+builder.Services.AddSingleton<MediaSearchProviderFactory>();
+builder.Services.AddSingleton<FirestoreClient>();
 builder.Services.AddSingleton<PostDataSeeder>();
 builder.Services.AddControllers();
 
