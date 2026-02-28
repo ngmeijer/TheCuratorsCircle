@@ -1,6 +1,8 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import CreatePost from '../app/createPost';
+import test from "node:test";
+import expect from "expect";
 
 test('renders category rows (list) with 5 items', () => {
   // This is a placeholder test scaffold. It will need real rendering in RN Testing Library setup.
