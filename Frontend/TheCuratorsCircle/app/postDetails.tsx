@@ -1,11 +1,10 @@
 import {ActivityIndicator, Image, ScrollView, StyleSheet, Text, View, Pressable} from "react-native";
 import React, {useEffect, useState} from "react";
-import {getPost, getMediaById} from "../api/databaseClient"
+import {getPost, getMediaById, MediaSearchResult} from "../api/databaseClient"
 import { useLocalSearchParams } from 'expo-router';
 import { PostDto } from "@/DTOs/PostDto";
 import { IconTextButton } from "@/components/IconTextButton";
 import { useRouter } from "expo-router";
-import {MediaSearchResult} from "@/api/mediaSearchResult";
 
 type TabType = 'details' | 'discussion' | 'collections' | 'rating';
 

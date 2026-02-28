@@ -15,10 +15,7 @@ import {
 } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { searchMedia, createPost } from '@/api/databaseClient';
-import {MediaCategory} from "@/api/mediaCategory";
-import {MediaSearchResult} from "@/api/mediaSearchResult";
-import {CreatePostPayload} from "@/api/createPostPayload";
+import { searchMedia, createPost, MediaCategory, MediaSearchResult, CreatePostPayload } from '@/api/databaseClient';
 
 type Step = 'category' | 'search' | 'select' | 'caption';
 

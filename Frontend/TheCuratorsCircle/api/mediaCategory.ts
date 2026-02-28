@@ -1,1 +1,0 @@
-export type MediaCategory = 'movie' | 'series' | 'game' | 'book' | 'music';

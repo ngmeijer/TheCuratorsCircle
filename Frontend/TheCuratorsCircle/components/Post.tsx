@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, Text, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { PostDto } from '@/DTOs/PostDto';
-import { getMediaById } from '@/api/databaseClient';
-import {MediaSearchResult} from "@/api/mediaSearchResult";
+import { getMediaById, MediaSearchResult } from '@/api/databaseClient';
 
 interface PostProps {
     item: PostDto;
