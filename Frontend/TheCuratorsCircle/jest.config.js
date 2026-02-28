@@ -1,14 +1,11 @@
 module.exports = {
-  preset: 'react-native',
+  preset: 'jest-expo',
   setupFilesAfterEnv: [
-    '@testing-library/jest-native/extend-expect'
+    './jest.setup.js'
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!react-native|@react-native|expo)'
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)'
   ],
-  transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
-  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/Frontend/TheCuratorsCircle/$1'
   },
