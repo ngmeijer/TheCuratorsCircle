@@ -5,6 +5,9 @@ jest.useFakeTimers();
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
   useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
-  useNavigation: () => ({ addListener: jest.fn() }),
+  useNavigation: () => ({ 
+    addListener: jest.fn(() => () => {}),
+    removeListener: jest.fn(() => {})
+  }),
   Link: 'a',
 }));
