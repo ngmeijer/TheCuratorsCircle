@@ -8,8 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint",
-    "test": "jest --config jest.config.js --setupFilesAfterEnv ./jest.setup.js"
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo-google-fonts/dev": "^0.4.45",
@@ -48,8 +47,7 @@
     "jest-expo": "^55.0.9",
     "@types/jest": "^29.0.0",
     "@testing-library/react-native": "^13.3.3",
-    "typescript": "~5.9.2",
-    "ts-jest": "^29.0.3"
+    "typescript": "~5.9.2"
   },
   "private": true
 }

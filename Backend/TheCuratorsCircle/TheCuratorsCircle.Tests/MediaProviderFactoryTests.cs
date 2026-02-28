@@ -4,7 +4,7 @@ using TheCuratorsCircle.Clients;
 using Xunit;
 using System.Net.Http;
 
-namespace Tests.IntegrationTests
+namespace TheCuratorsCircle.Tests
 {
     public class MediaProviderFactoryTests
     {
