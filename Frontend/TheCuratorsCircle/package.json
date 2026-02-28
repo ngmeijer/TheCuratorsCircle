@@ -42,14 +42,15 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@types/jest": "^29.0.0",
     "@types/react": "~19.1.0",
+    "@testing-library/react-native": "^13.3.3",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "jest": "^29.0.0",
     "jest-expo": "^55.0.9",
-    "@types/jest": "^29.0.0",
-    "@testing-library/react-native": "^13.3.3",
-    "typescript": "~5.9.2",
-    "ts-jest": "^29.0.3"
+    "ts-jest": "^29.0.3",
+    "typescript": "~5.9.2"
   },
   "private": true
 }
