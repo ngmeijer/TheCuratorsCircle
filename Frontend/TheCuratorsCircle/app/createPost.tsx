@@ -131,15 +131,16 @@ export default function CreatePost() {
     const renderCategory = () => (
         <View style={styles.content}>
             <Text style={styles.title}>What are you sharing?</Text>
-            <View style={styles.categoryGrid}>
+            <View style={styles.categoryList}>
                 {CATEGORIES.map((cat) => (
                     <TouchableOpacity
                         key={cat.id}
-                        style={styles.categoryCard}
+                        style={styles.categoryRow}
                         onPress={() => handleCategorySelect(cat.id)}
                     >
-                        <Ionicons name={cat.icon as any} size={40} color="#fff" />
+                        <Ionicons name={cat.icon as any} size={28} color="#fff" />
                         <Text style={styles.categoryLabel}>{cat.label}</Text>
+                        <Ionicons name="chevron-forward" size={24} color="#666" />
                     </TouchableOpacity>
                 ))}
             </View>
@@ -322,23 +323,21 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 24,
     },
-    categoryGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
+    categoryList: {
+        gap: 12,
     },
-    categoryCard: {
-        width: '48%',
+    categoryRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#1e293b',
         borderRadius: 12,
-        padding: 24,
-        alignItems: 'center',
-        marginBottom: 16,
+        padding: 16,
     },
     categoryLabel: {
         color: '#fff',
-        fontSize: 16,
-        marginTop: 8,
+        fontSize: 18,
+        flex: 1,
+        marginLeft: 16,
     },
     searchContainer: {
         flexDirection: 'row',
