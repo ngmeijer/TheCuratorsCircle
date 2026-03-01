@@ -21,12 +21,12 @@ public class PostsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
     {
-        _logger.LogInformation("CreatePost request received - MediaType: {MediaType}, MediaId: {MediaId}", request.MediaType, request.MediaId);
+        _logger.LogInformation("CreatePost request received - MediaType: {MediaType}, MediaId: {MediaId}, CollectionId: {CollectionId}", request.MediaType, request.MediaId, request.CollectionId);
 
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreatePost validation failed");
-            return BadRequest(new { message = "Invalid data." });
+            return BadRequest(new { message = "Invalid data. Title, mediaType, mediaId, and collectionId are required." });
         }
 
         var userId = "test-user-id";
@@ -39,6 +39,7 @@ public class PostsController : ControllerBase
             Caption = request.Caption,
             MediaType = request.MediaType,
             MediaId = request.MediaId,
+            CollectionId = request.CollectionId,
             CreatedAt = DateTime.UtcNow,
             LikeCount = 0,
             CommentCount = 0,
@@ -48,7 +49,36 @@ public class PostsController : ControllerBase
         var postsRef = _firestore.Database.Collection("posts");
         await postsRef.Document(post.Id).SetAsync(post);
 
-        _logger.LogInformation("Post created successfully - PostId: {PostId}, UserId: {UserId}", post.Id, userId);
+        // Update collection's itemIds
+        try
+        {
+            var collectionRef = _firestore.Database.Collection("collections").Document(request.CollectionId);
+            var collectionDoc = await collectionRef.GetSnapshotAsync();
+            
+            if (collectionDoc.Exists)
+            {
+                var collection = collectionDoc.ConvertTo<CollectionEntity>();
+                var itemIdsList = collection.ItemIds?.ToList() ?? new List<string>();
+                itemIdsList.Add(post.Id);
+                
+                await collectionRef.UpdateAsync(new Dictionary<string, object>
+                {
+                    { "itemIds", itemIdsList }
+                });
+                
+                _logger.LogInformation("Updated collection {CollectionId} with new post {PostId}", request.CollectionId, post.Id);
+            }
+            else
+            {
+                _logger.LogWarning("Collection {CollectionId} not found when updating itemIds", request.CollectionId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update collection itemIds for collection {CollectionId}", request.CollectionId);
+        }
+
+        _logger.LogInformation("Post created successfully - PostId: {PostId}, UserId: {UserId}, CollectionId: {CollectionId}", post.Id, userId, post.CollectionId);
         return Ok(post);
     }
 

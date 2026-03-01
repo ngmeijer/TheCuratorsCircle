@@ -1,10 +1,10 @@
 ﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator, Pressable} from 'react-native';
-import {router} from "expo-router";
+import {router, useFocusEffect} from "expo-router";
 import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import Post from "@/components/Post";
-import React, {useEffect} from "react";
+import React, {useEffect, useCallback} from "react";
 import {Colours} from "@/theme/colours";
 import { useState } from "react";
 import {getCollections, getPosts} from "@/api/databaseClient";
@@ -50,23 +50,25 @@ export function useProfileCollections() {
     const [collections, setCollections] = useState<CollectionDto[]>([]);
     const [loadingCollections, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function loadCollections() {
-            setLoading(true);
-            try {
-                const collections = await getCollections();
-                setCollections(collections);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+    const loadCollections = useCallback(async () => {
+        setLoading(true);
+        try {
+            const collections = await getCollections();
+            setCollections(collections);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
-
-        loadCollections();
     }, []);
 
-    return { collections, loadingCollections };
+    useFocusEffect(
+        useCallback(() => {
+            loadCollections();
+        }, [loadCollections])
+    );
+
+    return { collections, loadingCollections, refreshCollections: loadCollections };
 }
 
 export default function ProfilePage() {

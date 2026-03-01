@@ -7,6 +7,7 @@
 **Acceptance Criteria:**
 - Given I am on my profile, When I click "Create New Collection" and enter a name, Then a new collection record is saved in the database, linked to my user ID.
 - I can view my list of created collections on my profile.
+- Given I am creating a post, I must select which collection to add it to (required).
 - Given I am on the For You page, When I click the create button, I can choose between creating a Collection or a Post.
 
 ---
@@ -17,19 +18,21 @@
 
 ```
 ┌─────────────────────────┐
-│   Create New...         │  ← NEW: Initial choice screen
+│   Create New...         │  ← Initial choice screen
 ├─────────────────────────┤
 │  📁 Create Collection  │  → Simple name input → success
-│  ✏️ Create Post        │  → Category selection → existing flow
+│  ✏️ Create Post        │  → Category → Search → Select → Add to Collection → Caption
 └─────────────────────────┘
 ```
+
+**Note:** When creating a post, user MUST select a collection (required dropdown).
 
 ### Flow 2: From Profile Page
 
 ```
 ┌─────────────────────────┐
 │  My Collections        │
-│  [+ Create Collection] │  ← NEW: Button to create collection
+│  [+ Create Collection] │  ← Button to create collection
 ├─────────────────────────┤
 │  [Grid of collections] │
 └─────────────────────────┘
@@ -43,11 +46,22 @@
 
 ```
 Firestore: collections (collection)
-├── {auto-generated-id} (document)
+├── {collection-id} (document)
 │   ├── id: string
 │   ├── userId: string  
 │   ├── name: string
-│   ├── itemIds: string[] (for future - posts in collection)
+│   ├── itemIds: string[] (array of post IDs)
+│   └── createdAt: Timestamp
+
+Firestore: posts (collection)
+├── {post-id} (document)
+│   ├── id: string
+│   ├── userId: string
+│   ├── title: string
+│   ├── caption: string
+│   ├── mediaType: string
+│   ├── mediaId: string
+│   ├── collectionId: string  ← NEW: link to collection
 │   └── createdAt: Timestamp
 ```
 
@@ -58,6 +72,7 @@ Firestore: collections (collection)
 | POST | `/collections` | Create a new collection |
 | GET | `/collections` | Get all collections for current user |
 | GET | `/collections/{id}` | Get a single collection by ID |
+| POST | `/posts` | Create a new post (requires collectionId) |
 
 ---
 
@@ -100,11 +115,18 @@ Endpoints:
   - Queries Firestore "collections" where userId == current user
   - Returns list of collections ordered by createdAt descending
 
-#### Step 1.4: Update UserDataController ✅
-**File:** `Backend/TheCuratorsCircle/TheCuratorsCircle/Controllers/UserDataController.cs`
+- **GET /collections/{id}**: Get single collection
+  - Returns collection if owned by current user
 
-- Added FirestoreClient dependency
-- Updated GET /user/collections to fetch from Firestore instead of returning hardcoded data
+#### Step 1.4: Add collectionId to Post ✅
+**File:** `Backend/TheCuratorsCircle/TheCuratorsCircle/Models/Content/Post.cs`
+
+- Add `CollectionId` property to link post to collection
+
+#### Step 1.5: Add collectionId to CreatePostRequest ✅
+**File:** `Backend/TheCuratorsCircle/TheCuratorsCircle/Models/Content/CreatePostRequest.cs`
+
+- Add `CollectionId` property (required)
 
 ---
 
@@ -124,46 +146,40 @@ Completed:
 
 ---
 
-### Phase 3: Frontend - Refactor createPost.tsx 📋 PENDING
+### Phase 3: Frontend - Refactor createPost.tsx ✅ COMPLETE#### Step 3
 
-#### Step 3.1: Add Initial Choice Screen
+.1: Add Initial Choice Screen ✅
 **File:** `Frontend/TheCuratorsCircle/app/createPost.tsx`
 
-Add new step type and render:
+Completed:
+- [x] Add 'choose' and 'createCollection' step types
+- [x] Add `collectionName` state for collection creation
+- [x] Import `createCollection` from databaseClient
+- [x] Add `renderChoose()` function with two options (Create Collection / Create Post)
+- [x] Add `renderCreateCollection()` function with name input
+- [x] Add `handleChooseCollection()` and `handleChoosePost()` handlers
+- [x] Add `handleCreateCollection()` with API call
+- [x] Update navigation header title dynamically via `getHeaderTitle()`
 
-```typescript
-type Step = 'choose' | 'createCollection' | 'category' | 'search' | 'select' | 'caption';
-//                   ^ NEW: Initial choice screen
-//                        ^ NEW: Collection creation form
+#### Step 3.2: Add Collection Selection Step (NEW) ✅ COMPLETE
+**File:** `Frontend/TheCuratorsCircle/app/createPost.tsx`
+
+When creating a post, after selecting media, user must select a collection before adding caption.
+
+New flow:
+```
+choose → category → search → select → pickCollection → caption → submit
 ```
 
-**New initial screen:**
-```
-┌─────────────────────────────────┐
-│  What would you like to create? │
-├─────────────────────────────────┤
-│  📁  Create Collection         │
-│      Save media to a board      │
-├─────────────────────────────────┤
-│  ✏️  Create Post               │
-│      Share media with others    │
-└─────────────────────────────────┘
-```
-
-Tasks:
-- [ ] Add 'choose' and 'createCollection' step types
-- [ ] Add renderChoose() function with two options
-- [ ] Add renderCreateCollection() function with name input
-- [ ] Update navigation header title based on step
-
-#### Step 3.2: Update Navigation Header
-Dynamic header title based on step:
-- `choose` → "Create New"
-- `createCollection` → "New Collection"
-- `category` → "Create Post"
-- `search` → "Search"
-- `select` → "Confirm"
-- `caption` → "Caption"
+Completed:
+- [x] Add 'pickCollection' step type
+- [x] Fetch user's collections when reaching this step
+- [x] Render list with user's collections
+- [x] Make collection selection required
+- [x] Add selected state styling
+- [x] Pass collectionId in post payload
+- [x] Update backend Post model to include collectionId
+- [x] Update backend CreatePostRequest to require collectionId
 
 ---
 
@@ -213,8 +229,12 @@ Tasks:
 |------|---------|--------|
 | `CollectionEntity.cs` | Add id, userId, createdAt, itemIds | ✅ Complete |
 | `CollectionsController.cs` | Add POST, GET, GET/{id} endpoints | ✅ Complete |
-| `databaseClient.ts` | Add createCollection, getMyCollections, auth | 📋 Pending |
-| `createPost.tsx` | Add initial choice + collection creation flow | 📋 Pending |
+| `CreateCollectionRequest.cs` | New DTO | ✅ Complete |
+| `Post.cs` | Add CollectionId property | ✅ Complete |
+| `CreatePostRequest.cs` | Add CollectionId (required) | ✅ Complete |
+| `PostsController.cs` | Save CollectionId when creating post | ✅ Complete |
+| `databaseClient.ts` | Add createCollection, getCollections, getCollection, auth, collectionId in payload | ✅ Complete |
+| `createPost.tsx` | Add initial choice + collection creation + collection picker flow | ✅ Complete |
 | `profile.tsx` | Add create collection button + modal | 📋 Pending |
 
 ### Deleted Files

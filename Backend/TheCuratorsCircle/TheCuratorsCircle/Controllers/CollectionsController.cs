@@ -12,11 +12,13 @@ public class CollectionsController : ControllerBase
 {
     private readonly FirestoreClient _firestore;
     private readonly ILogger<CollectionsController> _logger;
+    private readonly APIHTTPClient _apiClient;
 
-    public CollectionsController(FirestoreClient firestore, ILogger<CollectionsController> logger)
+    public CollectionsController(FirestoreClient firestore, ILogger<CollectionsController> logger, APIHTTPClient apiClient)
     {
         _firestore = firestore;
         _logger = logger;
+        _apiClient = apiClient;
     }
 
     [HttpPost]
@@ -84,9 +86,50 @@ public class CollectionsController : ControllerBase
             var orderedCollections = collections
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();
+
+            // Fetch posts for each collection to get poster info
+            var responses = new List<CollectionResponse>();
+            
+            foreach (var collection in orderedCollections)
+            {
+                var response = new CollectionResponse
+                {
+                    Id = collection.Id,
+                    Name = collection.Name,
+                    UserId = collection.UserId,
+                    ItemIds = collection.ItemIds ?? Array.Empty<string>(),
+                    CreatedAt = collection.CreatedAt.ToDateTime(),
+                    ItemCount = collection.ItemIds?.Length ?? 0
+                };
+
+                // Get first post's media for poster
+                if (collection.ItemIds != null && collection.ItemIds.Length > 0)
+                {
+                    var firstPostId = collection.ItemIds[0];
+                    try
+                    {
+                        var postDoc = await _firestore.Database.Collection("posts").Document(firstPostId).GetSnapshotAsync();
+                        if (postDoc.Exists)
+                        {
+                            var post = postDoc.ConvertTo<Post>();
+                            var mediaInfo = await _apiClient.FetchMediaByIdAsync(post.MediaId);
+                            if (mediaInfo != null)
+                            {
+                                response.PosterUrl = mediaInfo.Poster;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to fetch poster for post {PostId}", firstPostId);
+                    }
+                }
+
+                responses.Add(response);
+            }
                 
-            _logger.LogInformation("GetCollections returning {Count} collections for user {UserId}", orderedCollections.Count, userId);
-            return Ok(orderedCollections);
+            _logger.LogInformation("GetCollections returning {Count} collections for user {UserId}", responses.Count, userId);
+            return Ok(responses);
         }
         catch (Exception ex)
         {

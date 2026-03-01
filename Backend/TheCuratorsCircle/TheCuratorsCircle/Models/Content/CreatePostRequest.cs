@@ -14,4 +14,7 @@ public class CreatePostRequest
 
     [Required]
     public string MediaId { get; set; }
+
+    [Required]
+    public string CollectionId { get; set; }
 }

@@ -37,6 +37,29 @@ public class APIHTTPClient
         return media;
     }
 
+    public async Task<MediaResponse?> FetchMediaByIdAsync(string imdbId)
+    {
+        var apiKey = _config["OMDB_API_KEY"];
+        if (string.IsNullOrEmpty(apiKey))
+            return null;
+
+        var response = await _client.GetAsync(
+            $"http://www.omdbapi.com/?apikey={apiKey}&i={Uri.EscapeDataString(imdbId)}"
+        );
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        var media = JsonSerializer.Deserialize<MediaResponse>(json);
+
+        if (media == null || media.Response == "False")
+            return null;
+
+        return media;
+    }
+
     public async Task<List<MediaResponse>> SearchMediaAsync(string query)
     {
         var apiKey = _config["OMDB_API_KEY"];

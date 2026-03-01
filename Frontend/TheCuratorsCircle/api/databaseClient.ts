@@ -192,6 +192,7 @@ export interface CreatePostPayload {
     caption: string;
     mediaType: string;
     mediaId: string;
+    collectionId: string;
 }
 
 export async function createPost(payload: CreatePostPayload): Promise<any> {

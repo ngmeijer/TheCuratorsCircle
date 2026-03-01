@@ -1,41 +1,35 @@
 import React from 'react';
 import {View, Image, StyleSheet, Text} from 'react-native';
-import {Media} from "@/DTOs/CollectionDto";
 
 interface CollectionProps {
     item: {
         id: string;
         name: string;
-        category: string;
-        mediaData: Media[];
+        posterUrl?: string | null;
+        itemCount?: number;
     };
 }
 
 export default function CollectionButton({item}: CollectionProps) {
-    const posterUri =
-        item.mediaData[0].posterUrl !== 'N/A'
-            ? item.mediaData[0].posterUrl
-            : null;
-
-    console.log("poster uri and collection name:", item.name, posterUri);
+    const itemCount = item.itemCount ?? 0;
+    const hasPoster = item.posterUrl && item.posterUrl !== 'N/A';
 
     return (
         <View style={styles.collectionContainer}>
             <View style={styles.imageWrapper}>
-                {posterUri ? (
-                    <Image source={{ uri: posterUri }} style={styles.image} />
+                {hasPoster ? (
+                    <Image source={{ uri: item.posterUrl! }} style={styles.image} />
                 ) : (
                     <View style={[styles.image, styles.placeholder]}>
-                        <Text style={{ color: 'white' }}>No image</Text>
+                        <Text style={{ color: 'white', fontSize: 32 }}>📁</Text>
                     </View>
                 )}
                 <View style={styles.nameOverlay}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.category}>{item.category}</Text>
+                    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                 </View>
 
                 <View style={styles.itemCountOverlay}>
-                    <Text style={styles.itemCount}>{item.mediaData?.length} items</Text>
+                    <Text style={styles.itemCount}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</Text>
                 </View>
             </View>
         </View>
@@ -89,9 +83,6 @@ const styles = StyleSheet.create({
         color: 'white',
         padding: 5,
         borderRadius: 6
-    },
-    category: {
-        color: 'white',
     },
     placeholder: {
         backgroundColor: '#333',
