@@ -15,9 +15,9 @@ import {
 } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { searchMedia, createPost, MediaCategory, MediaSearchResult, CreatePostPayload } from '@/api/databaseClient';
+import { searchMedia, createPost, createCollection, getCollections, MediaCategory, MediaSearchResult, CreatePostPayload } from '@/api/databaseClient';
 
-type Step = 'category' | 'search' | 'select' | 'caption';
+type Step = 'choose' | 'createCollection' | 'category' | 'search' | 'select' | 'pickCollection' | 'caption';
 
 const CATEGORIES: { id: MediaCategory; label: string; icon: string }[] = [
     { id: 'movie', label: 'Movie', icon: 'film' },
@@ -29,12 +29,31 @@ const CATEGORIES: { id: MediaCategory; label: string; icon: string }[] = [
 
 export default function CreatePost() {
     const navigation = useNavigation();
-    const [step, setStep] = useState<Step>('category');
+    const [step, setStep] = useState<Step>('choose');
     const stepRef = useRef(step);
     
     useEffect(() => {
         stepRef.current = step;
     }, [step]);
+
+    useEffect(() => {
+        if (step === 'pickCollection') {
+            loadCollections();
+        }
+    }, [step]);
+
+    const loadCollections = async () => {
+        setLoadingCollections(true);
+        try {
+            const cols = await getCollections();
+            setCollections(cols.map((c: any) => ({ id: c.id, name: c.name })));
+        } catch (error) {
+            console.error('Failed to load collections:', error);
+            Alert.alert('Error', 'Failed to load collections');
+        } finally {
+            setLoadingCollections(false);
+        }
+    };
 
     const [category, setCategory] = useState<MediaCategory | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -44,19 +63,32 @@ export default function CreatePost() {
     const [caption, setCaption] = useState('');
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
+    const [collectionName, setCollectionName] = useState('');
+    const [collections, setCollections] = useState<{id: string; name: string}[]>([]);
+    const [selectedCollection, setSelectedCollection] = useState<{id: string; name: string} | null>(null);
+    const [loadingCollections, setLoadingCollections] = useState(false);
 
     const handleBack = () => {
         console.log('handleBack called, step:', stepRef.current);
-        if (stepRef.current === 'category') {
+        if (stepRef.current === 'choose') {
             router.back();
+        } else if (stepRef.current === 'createCollection') {
+            setStep('choose');
+            setCollectionName('');
+        } else if (stepRef.current === 'category') {
+            setStep('choose');
+            setCategory(null);
         } else if (stepRef.current === 'search') {
             setStep('category');
             setCategory(null);
         } else if (stepRef.current === 'select') {
             setStep('search');
             setSearchResults([]);
-        } else if (stepRef.current === 'caption') {
+        } else if (stepRef.current === 'pickCollection') {
             setStep('select');
+            setSelectedCollection(null);
+        } else if (stepRef.current === 'caption') {
+            setStep('pickCollection');
             setTitle('');
             setCaption('');
         }
@@ -64,7 +96,7 @@ export default function CreatePost() {
 
     useEffect(() => {
         const handleBackPress = (e: any) => {
-            if (stepRef.current !== 'category') {
+            if (stepRef.current !== 'choose') {
                 e.preventDefault();
                 handleBack();
             }
@@ -75,6 +107,34 @@ export default function CreatePost() {
             navigation.removeListener('beforeRemove', handleBackPress);
         };
     }, [navigation, step]);
+
+    const handleChooseCollection = () => {
+        setStep('createCollection');
+    };
+
+    const handleChoosePost = () => {
+        setStep('category');
+    };
+
+    const handleCreateCollection = async () => {
+        if (!collectionName.trim()) {
+            Alert.alert('Error', 'Please enter a collection name');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await createCollection({ name: collectionName.trim() });
+            Alert.alert('Success', 'Collection created!', [
+                { text: 'OK', onPress: () => router.back() }
+            ]);
+        } catch (error: any) {
+            console.error('Create collection error:', error);
+            Alert.alert('Error', error.message || 'Failed to create collection');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleCategorySelect = (cat: MediaCategory) => {
         setCategory(cat);
@@ -98,12 +158,30 @@ export default function CreatePost() {
 
     const handleSelectMedia = (media: MediaSearchResult) => {
         setSelectedMedia(media);
+        setStep('pickCollection');
+    };
+
+    const handleSelectCollection = (collection: {id: string; name: string}) => {
+        setSelectedCollection(collection);
+        setStep('caption');
+    };
+
+    const handleContinueToCaption = () => {
+        if (!selectedCollection) {
+            Alert.alert('Error', 'Please select a collection');
+            return;
+        }
         setStep('caption');
     };
 
     const handleSubmit = async () => {
         if (!selectedMedia || !title.trim()) {
             Alert.alert('Error', 'Please add a title');
+            return;
+        }
+
+        if (!selectedCollection) {
+            Alert.alert('Error', 'Please select a collection');
             return;
         }
 
@@ -114,6 +192,7 @@ export default function CreatePost() {
                 caption: caption.trim(),
                 mediaType: selectedMedia.type || category || 'movie',
                 mediaId: selectedMedia.id,
+                collectionId: selectedCollection.id,
             };
 
             await createPost(payload);
@@ -127,6 +206,72 @@ export default function CreatePost() {
             setLoading(false);
         }
     };
+
+    const renderChoose = () => (
+        <View style={styles.content}>
+            <Text style={styles.title}>What would you like to create?</Text>
+            
+            <TouchableOpacity
+                style={styles.optionCard}
+                onPress={handleChooseCollection}
+            >
+                <View style={styles.optionIconContainer}>
+                    <Ionicons name="folder-open" size={32} color="#fff" />
+                </View>
+                <View style={styles.optionTextContainer}>
+                    <Text style={styles.optionTitle}>Create Collection</Text>
+                    <Text style={styles.optionDescription}>Save media to a board</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#666" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.optionCard}
+                onPress={handleChoosePost}
+            >
+                <View style={styles.optionIconContainer}>
+                    <Ionicons name="create" size={32} color="#fff" />
+                </View>
+                <View style={styles.optionTextContainer}>
+                    <Text style={styles.optionTitle}>Create Post</Text>
+                    <Text style={styles.optionDescription}>Share media with others</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#666" />
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderCreateCollection = () => (
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.content}
+        >
+            <ScrollView>
+                <Text style={styles.title}>New Collection</Text>
+                <Text style={styles.fieldLabel}>Collection Name</Text>
+                <TextInput
+                    style={styles.titleInput}
+                    placeholder="e.g., My Favorite Movies"
+                    placeholderTextColor="#888"
+                    value={collectionName}
+                    onChangeText={setCollectionName}
+                    maxLength={100}
+                    autoFocus
+                />
+                <TouchableOpacity
+                    style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                    onPress={handleCreateCollection}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Text style={styles.submitButtonText}>Create Collection</Text>
+                    )}
+                </TouchableOpacity>
+            </ScrollView>
+        </KeyboardAvoidingView>
+    );
 
     const renderCategory = () => (
         <View style={styles.content}>
@@ -208,9 +353,62 @@ export default function CreatePost() {
                     <Text style={styles.selectedYear}>{selectedMedia.year}</Text>
                 </View>
             )}
-            <TouchableOpacity style={styles.continueButton} onPress={() => setStep('caption')}>
+            <TouchableOpacity style={styles.continueButton} onPress={() => setStep('pickCollection')}>
                 <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
+        </View>
+    );
+
+    const renderPickCollection = () => (
+        <View style={styles.content}>
+            <Text style={styles.title}>Add to Collection</Text>
+            <Text style={styles.subtitle}>Select a collection for this post (required)</Text>
+            
+            {loadingCollections ? (
+                <ActivityIndicator size="large" color="#fff" style={styles.loader} />
+            ) : collections.length === 0 ? (
+                <View style={styles.emptyCollections}>
+                    <Text style={styles.emptyText}>No collections yet</Text>
+                    <Text style={styles.emptySubtext}>Create a collection first from your profile</Text>
+                </View>
+            ) : (
+                <ScrollView style={styles.collectionList}>
+                    {collections.map((collection) => (
+                        <TouchableOpacity
+                            key={collection.id}
+                            style={[
+                                styles.collectionItem,
+                                selectedCollection?.id === collection.id && styles.collectionItemSelected
+                            ]}
+                            onPress={() => handleSelectCollection(collection)}
+                        >
+                            <Ionicons 
+                                name="folder" 
+                                size={24} 
+                                color={selectedCollection?.id === collection.id ? '#3b82f6' : '#fff'} 
+                            />
+                            <Text style={[
+                                styles.collectionName,
+                                selectedCollection?.id === collection.id && styles.collectionNameSelected
+                            ]}>
+                                {collection.name}
+                            </Text>
+                            {selectedCollection?.id === collection.id && (
+                                <Ionicons name="checkmark-circle" size={24} color="#3b82f6" />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            )}
+            
+            {selectedCollection && (
+                <TouchableOpacity 
+                    style={[styles.continueButton, styles.marginTop]} 
+                    onPress={handleContinueToCaption}
+                >
+                    <Text style={styles.continueButtonText}>Continue</Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 
@@ -264,24 +462,43 @@ export default function CreatePost() {
         </KeyboardAvoidingView>
     );
 
+    const getHeaderTitle = () => {
+        switch (step) {
+            case 'choose':
+                return 'Create New';
+            case 'createCollection':
+                return 'New Collection';
+            case 'category':
+                return 'Create Post';
+            case 'search':
+                return 'Search';
+            case 'select':
+                return 'Confirm';
+            case 'pickCollection':
+                return 'Add to Collection';
+            case 'caption':
+                return 'Caption';
+            default:
+                return 'Create';
+        }
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>
-                    {step === 'category' && 'Create Post'}
-                    {step === 'search' && 'Search'}
-                    {step === 'select' && 'Confirm'}
-                    {step === 'caption' && 'Caption'}
-                </Text>
+                <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
                 <View style={styles.placeholder} />
             </View>
 
+            {step === 'choose' && renderChoose()}
+            {step === 'createCollection' && renderCreateCollection()}
             {step === 'category' && renderCategory()}
             {step === 'search' && renderSearch()}
             {step === 'select' && renderSelect()}
+            {step === 'pickCollection' && renderPickCollection()}
             {step === 'caption' && renderCaption()}
         </View>
     );
@@ -322,6 +539,36 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 24,
+    },
+    optionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e293b',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+    },
+    optionIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#3b82f6',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    optionTextContainer: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    optionTitle: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    optionDescription: {
+        color: '#888',
+        fontSize: 14,
+        marginTop: 4,
     },
     categoryList: {
         gap: 12,
@@ -468,6 +715,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 16,
         alignItems: 'center',
+        marginTop: 24,
     },
     submitButtonDisabled: {
         opacity: 0.6,
@@ -476,5 +724,52 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#888',
+        marginBottom: 16,
+        marginTop: -16,
+    },
+    collectionList: {
+        flex: 1,
+        marginTop: 16,
+    },
+    collectionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e293b',
+        borderRadius: 8,
+        padding: 16,
+        marginBottom: 12,
+    },
+    collectionItemSelected: {
+        backgroundColor: '#1e3a5f',
+        borderWidth: 1,
+        borderColor: '#3b82f6',
+    },
+    collectionName: {
+        flex: 1,
+        color: '#fff',
+        fontSize: 16,
+        marginLeft: 12,
+    },
+    collectionNameSelected: {
+        color: '#3b82f6',
+        fontWeight: '600',
+    },
+    emptyCollections: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    emptySubtext: {
+        color: '#666',
+        fontSize: 14,
+        marginTop: 8,
+    },
+    marginTop: {
+        marginTop: 16,
     },
 });

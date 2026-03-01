@@ -23,6 +23,9 @@ public class Post
     [FirestoreProperty("mediaId")]
     public string MediaId { get; set; }
 
+    [FirestoreProperty("collectionId")]
+    public string CollectionId { get; set; }
+
     [FirestoreProperty("createdAt")]
     public DateTime CreatedAt { get; set; }
 

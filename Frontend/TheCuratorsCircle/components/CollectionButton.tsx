@@ -1,41 +1,42 @@
 import React from 'react';
-import {View, Image, StyleSheet, Text} from 'react-native';
-import {Media} from "@/DTOs/CollectionDto";
+import {View, Image, StyleSheet, Text, useWindowDimensions} from 'react-native';
 
 interface CollectionProps {
     item: {
         id: string;
         name: string;
-        category: string;
-        mediaData: Media[];
+        posterUrl?: string | null;
+        itemCount?: number;
     };
 }
 
 export default function CollectionButton({item}: CollectionProps) {
-    const posterUri =
-        item.mediaData[0].posterUrl !== 'N/A'
-            ? item.mediaData[0].posterUrl
-            : null;
-
-    console.log("poster uri and collection name:", item.name, posterUri);
+    const { width } = useWindowDimensions();
+    const itemWidth = (width - 24) / 2; // 24 = padding (12 on each side)
+    
+    const itemCount = item.itemCount ?? 0;
+    const hasPoster = item.posterUrl && item.posterUrl !== 'N/A';
 
     return (
-        <View style={styles.collectionContainer}>
+        <View style={[styles.collectionContainer, { width: itemWidth }]}>
             <View style={styles.imageWrapper}>
-                {posterUri ? (
-                    <Image source={{ uri: posterUri }} style={styles.image} />
+                {hasPoster ? (
+                    <Image 
+                        source={{ uri: item.posterUrl! }} 
+                        style={[styles.image, { width: itemWidth - 8 }]} 
+                        resizeMode="cover"
+                    />
                 ) : (
-                    <View style={[styles.image, styles.placeholder]}>
-                        <Text style={{ color: 'white' }}>No image</Text>
+                    <View style={[styles.image, styles.placeholder, { width: itemWidth - 8 }]}>
+                        <Text style={{ color: 'white', fontSize: 32 }}>📁</Text>
                     </View>
                 )}
                 <View style={styles.nameOverlay}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.category}>{item.category}</Text>
+                    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                 </View>
 
                 <View style={styles.itemCountOverlay}>
-                    <Text style={styles.itemCount}>{item.mediaData?.length} items</Text>
+                    <Text style={styles.itemCount}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</Text>
                 </View>
             </View>
         </View>
@@ -44,54 +45,43 @@ export default function CollectionButton({item}: CollectionProps) {
 
 const styles = StyleSheet.create({
     collectionContainer: {
-        alignItems: 'center',
-        flex: 1,
-        marginHorizontal: 10,
-        marginVertical: 5,
-        maxWidth: "48%",
+        margin: 4,
     },
     imageWrapper: {
-        position:'relative',
-        borderRadius:12,
+        position: 'relative',
+        borderRadius: 12,
         overflow: 'hidden',
-        width: '100%',
-        aspectRatio: 1
     },
     image: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-        borderRadius: 15
+        aspectRatio: 2/3,
+        borderRadius: 12,
     },
     nameOverlay: {
         position: 'absolute',
-        width: '90%',
         top: 8,
         left: 8,
+        right: 8,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal:8,
-        paddingVertical:4,
-        borderRadius:12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     itemCountOverlay: {
-      position: 'absolute',
-      bottom: 8,
-      right: 8,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal:8,
-      paddingVertical:4,
-      borderRadius:12,
+        position: 'absolute',
+        bottom: 8,
+        right: 8,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     name: {
-        color:'white'
+        color: 'white',
+        fontSize: 14,
     },
     itemCount: {
         color: 'white',
-        padding: 5,
-        borderRadius: 6
-    },
-    category: {
-        color: 'white',
+        fontSize: 12,
     },
     placeholder: {
         backgroundColor: '#333',

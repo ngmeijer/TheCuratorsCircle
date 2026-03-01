@@ -1,10 +1,12 @@
-﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator, Pressable} from 'react-native';
-import {router} from "expo-router";
+﻿import {Text, View, StyleSheet, Image, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
+import {FlashList} from '@shopify/flash-list';
+import {router, useFocusEffect} from "expo-router";
 import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
+import CreateCollectionModal from "@/components/CreateCollectionModal";
 import Post from "@/components/Post";
-import React, {useEffect} from "react";
+import React, {useEffect, useCallback} from "react";
 import {Colours} from "@/theme/colours";
 import { useState } from "react";
 import {getCollections, getPosts} from "@/api/databaseClient";
@@ -50,35 +52,41 @@ export function useProfileCollections() {
     const [collections, setCollections] = useState<CollectionDto[]>([]);
     const [loadingCollections, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function loadCollections() {
-            setLoading(true);
-            try {
-                const collections = await getCollections();
-                setCollections(collections);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+    const loadCollections = useCallback(async () => {
+        setLoading(true);
+        try {
+            const collections = await getCollections();
+            setCollections(collections);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
-
-        loadCollections();
     }, []);
 
-    return { collections, loadingCollections };
+    useFocusEffect(
+        useCallback(() => {
+            loadCollections();
+        }, [loadCollections])
+    );
+
+    return { collections, loadingCollections, refreshCollections: loadCollections };
 }
 
 export default function ProfilePage() {
+    const { width } = useWindowDimensions();
     const { posts, loadingPosts } = useProfilePosts();
-    const { collections, loadingCollections } = useProfileCollections();
+    const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
+    const [modalVisible, setModalVisible] = useState(false);
+
+    const createButtonWidth = (width - 24) / 2;
 
     if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
     if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
 
-    return (
-        <View style={styles.container}>
+    const renderHeader = () => (
+        <View>
             <View style={styles.profileHeader}>
                 <Image
                     source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
@@ -162,46 +170,162 @@ export default function ProfilePage() {
                         ]}
                     />
                 </View>
-                {activeTab === "collections" ? (
-                    <FlatList
-                        key="collections"
-                        data={collections}
-                        numColumns={2}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => <CollectionButton item={item} />}
-                    />
-                ) : (
-                    <FlatList
-                        data={posts}
-                        numColumns={2}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <Post
-                                item={item}
-                                onPress={() => handlePostPress(item.id)}
-                            />
-                        )}
-                    />
-                )}
-
             </View>
         </View>
+    );
+
+    return (
+        <>
+            <ScrollView style={styles.container} stickyHeaderIndices={[1]}>
+            <View style={styles.profileHeader}>
+                <Image
+                    source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
+                    style={styles.profilePicture}
+                />
+
+                <Text style={styles.fullName}>
+                    Jerry Meijer
+                </Text>
+                <Text style={styles.username}>@testerJerry</Text>
+                <Text style={styles.biography}>miauw miauw miauw.
+
+                    miau miauw, meow miaow miauw… miauw miauw.
+                    miauw miauw miauw miauw.
+
+                    meow miaow,
+                    miauw miau miauw.
+                    miauw… miauw..</Text>
+            </View>
+
+            <View style={styles.profileActions}>
+                <View style={styles.dataButtons}>
+                    <DynamicDataButton
+                        name="Collections"
+                        data="5"
+                        onPress={() => router.push("/collectionsPage")}
+                        buttonStyle={styles.button}
+                        nameTextStyle={styles.detailsNameButton}
+                        dataTextStyle={styles.detailsDataButton}
+                    />
+                    <DynamicDataButton
+                        name="Followers"
+                        data="5"
+                        onPress={() => router.push("/collectionsPage")}
+                        buttonStyle={styles.button}
+                        nameTextStyle={styles.detailsNameButton}
+                        dataTextStyle={styles.detailsDataButton}
+                    />
+                    <DynamicDataButton
+                        name="Following"
+                        data="5"
+                        onPress={() => router.push("/collectionsPage")}
+                        buttonStyle={styles.button}
+                        nameTextStyle={styles.detailsNameButton}
+                        dataTextStyle={styles.detailsDataButton}
+                    />
+                    </View>
+
+                <StyledButton
+                    style={styles.editProfileButton}
+                    title="Edit profile"
+                    onPress={handleEditProfile}
+                />
+            </View>
+
+            <View style={styles.profileContentTabs}>
+                <View style={styles.profileContentButtons}>
+                    <StyledButton
+                        title="Collections"
+                        onPress={() => setActiveTab("collections")}
+                        style={[
+                            styles.tabButton,
+                            activeTab === "collections" && styles.activeTabButton
+                        ]}
+                        textStyle={[
+                            styles.tabButtonText,
+                            activeTab === "collections" && styles.activeTabText
+                        ]}
+                    />
+
+                    <StyledButton
+                        title="Posts"
+                        onPress={() => setActiveTab("posts")}
+                        style={[
+                            styles.tabButton,
+                            activeTab === "posts" && styles.activeTabButton
+                        ]}
+                        textStyle={[
+                            styles.tabButtonText,
+                            activeTab === "posts" && styles.activeTabText
+                        ]}
+                    />
+                </View>
+            </View>
+
+            {activeTab === "collections" ? (
+                <View style={styles.collectionsContainer}>
+                    <FlashList
+                        data={[{ id: 'create-new', type: 'create' } as any, ...collections.map(c => ({ ...c, type: 'collection' }))]}
+                        renderItem={({ item }: any) => {
+                            if (item.type === 'create') {
+                                return (
+                                    <Pressable 
+                                        style={[styles.createCollectionButton, { width: createButtonWidth - 8, height: 75 }]}
+                                        onPress={() => setModalVisible(true)}
+                                    >
+                                        <Text style={styles.createCollectionText}>+</Text>
+                                    </Pressable>
+                                );
+                            }
+                            return (
+                                <CollectionButton 
+                                    item={item} 
+                                />
+                            );
+                        }}
+                        masonry
+                        numColumns={2}
+                        keyExtractor={(item: any) => item.id}
+                        contentContainerStyle={styles.listContent}
+                    />
+                </View>
+            ) : (
+                <View style={styles.collectionsGrid}>
+                    {posts.map((item) => (
+                        <Post
+                            key={item.id}
+                            item={item}
+                            onPress={() => handlePostPress(item.id)}
+                        />
+                    ))}
+                </View>
+            )}
+        </ScrollView>
+        <CreateCollectionModal 
+            visible={modalVisible} 
+            onClose={() => setModalVisible(false)}
+            onSuccess={() => {
+                setModalVisible(false);
+                refreshCollections();
+            }}
+        />
+        </>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flex:1,
         backgroundColor: '#121417',
-        justifyContent: 'center',
-        alignItems: 'center',
+    },
+    scrollView: {
+        flex:1,
     },
     profileHeader: {
-        flex: 2,
-        marginTop: 20,
+        paddingTop: 20,
+        paddingBottom: 16,
         width: '100%',
         backgroundColor: '#121417',
-        justifyContent: 'center',
         alignItems: 'center',
     },
     profilePicture:{
@@ -227,23 +351,33 @@ const styles = StyleSheet.create({
     },
     profileActions: {
         backgroundColor:"#121417",
-        flex:1,
         width: '100%',
         flexDirection: 'column',
         alignItems: 'center',
     },
     profileContentTabs: {
-        flex:3,
         backgroundColor: '#181B20',
         width: '100%',
     },
-    collections: {
-        flex:5,
-        flexDirection: 'column',
-     },
+    collectionsGrid: {
+        flex: 1,
+    },
+    listContent: {
+        padding: 8,
+    },
+    createCollectionButton: {
+        margin: 4,
+        backgroundColor: '#333',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+    },
+    collectionsContainer: {
+        flex: 1,
+        minHeight: 300,
+    },
     posts: {
-        flex:5,
-        flexDirection: 'column',
+        flex: 1,
     },
     tabText: {
         color: "#AAA",
@@ -303,5 +437,10 @@ const styles = StyleSheet.create({
     },
     showPostsButton: {
 
+    },
+    createCollectionText: {
+        color: '#888',
+        fontSize: 40,
+        fontWeight: '300',
     },
 });
