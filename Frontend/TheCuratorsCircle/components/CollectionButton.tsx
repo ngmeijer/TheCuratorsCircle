@@ -42,10 +42,8 @@ export default function CollectionButton({item}: CollectionProps) {
 
 const styles = StyleSheet.create({
     collectionContainer: {
-        flex: 1,
-        marginHorizontal: 6,
-        marginVertical: 6,
-        maxWidth: '50%',
+        width: '48%',
+        margin: '1%',
     },
     imageWrapper: {
         position: 'relative',
