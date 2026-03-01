@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Image, StyleSheet, Text} from 'react-native';
+import {View, Image, StyleSheet, Text, useWindowDimensions} from 'react-native';
 
 interface CollectionProps {
     item: {
@@ -11,20 +11,23 @@ interface CollectionProps {
 }
 
 export default function CollectionButton({item}: CollectionProps) {
+    const { width } = useWindowDimensions();
+    const itemWidth = (width - 24) / 2; // 24 = padding (12 on each side)
+    
     const itemCount = item.itemCount ?? 0;
     const hasPoster = item.posterUrl && item.posterUrl !== 'N/A';
 
     return (
-        <View style={styles.collectionContainer}>
+        <View style={[styles.collectionContainer, { width: itemWidth }]}>
             <View style={styles.imageWrapper}>
                 {hasPoster ? (
                     <Image 
                         source={{ uri: item.posterUrl! }} 
-                        style={styles.image} 
+                        style={[styles.image, { width: itemWidth - 8 }]} 
                         resizeMode="cover"
                     />
                 ) : (
-                    <View style={[styles.image, styles.placeholder]}>
+                    <View style={[styles.image, styles.placeholder, { width: itemWidth - 8 }]}>
                         <Text style={{ color: 'white', fontSize: 32 }}>📁</Text>
                     </View>
                 )}
@@ -42,8 +45,7 @@ export default function CollectionButton({item}: CollectionProps) {
 
 const styles = StyleSheet.create({
     collectionContainer: {
-        width: '48%',
-        margin: '1%',
+        margin: 4,
     },
     imageWrapper: {
         position: 'relative',
@@ -51,7 +53,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     image: {
-        width: '100%',
         aspectRatio: 2/3,
         borderRadius: 12,
     },

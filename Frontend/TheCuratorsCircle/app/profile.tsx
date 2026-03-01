@@ -1,4 +1,5 @@
-﻿import {Text, View, StyleSheet, Image, ActivityIndicator, Pressable, ScrollView} from 'react-native';
+﻿import {Text, View, StyleSheet, Image, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
+import {FlashList} from '@shopify/flash-list';
 import {router, useFocusEffect} from "expo-router";
 import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
@@ -73,10 +74,13 @@ export function useProfileCollections() {
 }
 
 export default function ProfilePage() {
+    const { width } = useWindowDimensions();
     const { posts, loadingPosts } = useProfilePosts();
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
+
+    const createButtonWidth = (width - 24) / 2;
 
     if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
     if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
@@ -171,7 +175,8 @@ export default function ProfilePage() {
     );
 
     return (
-        <ScrollView style={styles.container} stickyHeaderIndices={[1]}>
+        <>
+            <ScrollView style={styles.container} stickyHeaderIndices={[1]}>
             <View style={styles.profileHeader}>
                 <Image
                     source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
@@ -258,16 +263,31 @@ export default function ProfilePage() {
             </View>
 
             {activeTab === "collections" ? (
-                <View style={styles.collectionsGrid}>
-                    <Pressable 
-                        style={styles.createCollectionButton}
-                        onPress={() => setModalVisible(true)}
-                    >
-                        <Text style={styles.createCollectionText}>+</Text>
-                    </Pressable>
-                    {collections.map((item) => (
-                        <CollectionButton key={item.id} item={item} />
-                    ))}
+                <View style={styles.collectionsContainer}>
+                    <FlashList
+                        data={[{ id: 'create-new', type: 'create' } as any, ...collections.map(c => ({ ...c, type: 'collection' }))]}
+                        renderItem={({ item }: any) => {
+                            if (item.type === 'create') {
+                                return (
+                                    <Pressable 
+                                        style={[styles.createCollectionButton, { width: createButtonWidth - 8, height: 75 }]}
+                                        onPress={() => setModalVisible(true)}
+                                    >
+                                        <Text style={styles.createCollectionText}>+</Text>
+                                    </Pressable>
+                                );
+                            }
+                            return (
+                                <CollectionButton 
+                                    item={item} 
+                                />
+                            );
+                        }}
+                        masonry
+                        numColumns={2}
+                        keyExtractor={(item: any) => item.id}
+                        contentContainerStyle={styles.listContent}
+                    />
                 </View>
             ) : (
                 <View style={styles.collectionsGrid}>
@@ -281,6 +301,15 @@ export default function ProfilePage() {
                 </View>
             )}
         </ScrollView>
+        <CreateCollectionModal 
+            visible={modalVisible} 
+            onClose={() => setModalVisible(false)}
+            onSuccess={() => {
+                setModalVisible(false);
+                refreshCollections();
+            }}
+        />
+        </>
     );
 }
 
@@ -331,27 +360,24 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     collectionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+        flex: 1,
+    },
+    listContent: {
         padding: 8,
-        alignItems: 'flex-start',
     },
     createCollectionButton: {
-        width: '48%',
-        margin: '1%',
-        height: 80,
+        margin: 4,
         backgroundColor: '#333',
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 12,
     },
-    collections: {
-        flex:5,
-        flexDirection: 'column',
-     },
+    collectionsContainer: {
+        flex: 1,
+        minHeight: 300,
+    },
     posts: {
-        flex:5,
-        flexDirection: 'column',
+        flex: 1,
     },
     tabText: {
         color: "#AAA",
@@ -416,8 +442,5 @@ const styles = StyleSheet.create({
         color: '#888',
         fontSize: 40,
         fontWeight: '300',
-    },
-    collectionsContainer: {
-        flex: 1,
     },
 });

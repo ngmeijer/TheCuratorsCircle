@@ -247,12 +247,59 @@ Tasks:
 - ✅ "+ Create Collection" button to profile collections tab
 - ✅ Modal with onSuccess callback to refresh collections
 - ✅ Style create button as grey square with "+" icon in grid
-- ✅ Pinterest-style masonry grid layout for collections
+- ✅ Pinterest-style masonry grid layout for collections (using FlashList)
 - ✅ Collection posters use original aspect ratio (2/3)
 - ✅ Create button matches collection aspect ratio
 - ✅ Create button always first in grid
 - ✅ Fixed grid row styling for consistent width distribution
 - ✅ Full screen height for collections content area
+
+---
+
+## Phase 5: Implement Pinterest-style Masonry with FlashList
+
+### Overview
+Replace current flex-wrap grid with `@shopify/flash-list` for true Pinterest-style masonry layout.
+
+### Why FlashList?
+- ✅ Actively maintained by Shopify (7k stars)
+- ✅ Built for RN new architecture
+- ✅ Native masonry support with `masonry` prop
+- ✅ Drop-in replacement for FlatList
+- ✅ No size estimates required (v2)
+- ✅ Supports variable height items
+
+### Implementation Steps
+
+#### Step 5.1: Install FlashList
+```bash
+npx expo install @shopify/flash-list expo-dev-client
+```
+
+#### Step 5.2: Update profile.tsx
+- Import FlashList from `@shopify/flash-list`
+- Replace ScrollView with FlashList for collections
+- Add `masonry` prop
+- Add `numColumns={2}`
+- Use `ListHeaderComponent` for profile header
+- Remove create button from grid (use floating button or separate screen)
+
+#### Step 5.3: Handle Create Collection
+- Option A: Keep create button as first item in data array
+- Option B: Use floating action button outside FlashList
+- Option C: Navigate to separate "Create Collection" screen
+
+### Key FlashList Props for Masonry
+```typescript
+<FlashList
+  data={collections}
+  renderItem={({ item }) => <CollectionButton item={item} />}
+  keyExtractor={(item) => item.id}
+  masonry              // Enable masonry layout
+  numColumns={2}      // 2 columns
+  ListHeaderComponent={renderHeader}  // Profile header scrolls with list
+/>
+```
 
 ### Deleted Files
 
