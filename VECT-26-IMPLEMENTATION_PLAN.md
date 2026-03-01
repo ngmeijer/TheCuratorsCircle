@@ -235,7 +235,24 @@ Tasks:
 | `PostsController.cs` | Save CollectionId when creating post | ✅ Complete |
 | `databaseClient.ts` | Add createCollection, getCollections, getCollection, auth, collectionId in payload | ✅ Complete |
 | `createPost.tsx` | Add initial choice + collection creation + collection picker flow | ✅ Complete |
-| `profile.tsx` | Add create collection button + modal | 📋 Pending |
+| `CreateCollectionModal.tsx` | New component for creating collections | ✅ Complete |
+| `CollectionButton.tsx` | Pinterest-style layout, aspect ratio, grey placeholder | ✅ Complete |
+| `profile.tsx` | Create button, modal, full-height content area | ✅ Complete |
+
+---
+
+### Additional UI Updates
+
+- ✅ CreateCollectionModal component (reusable modal for creating collections)
+- ✅ "+ Create Collection" button to profile collections tab
+- ✅ Modal with onSuccess callback to refresh collections
+- ✅ Style create button as grey square with "+" icon in grid
+- ✅ Pinterest-style masonry grid layout for collections
+- ✅ Collection posters use original aspect ratio (2/3)
+- ✅ Create button matches collection aspect ratio
+- ✅ Create button always first in grid
+- ✅ Fixed grid row styling for consistent width distribution
+- ✅ Full screen height for collections content area
 
 ### Deleted Files
 

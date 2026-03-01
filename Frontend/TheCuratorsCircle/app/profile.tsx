@@ -1,8 +1,9 @@
-﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator, Pressable} from 'react-native';
+﻿import {Text, View, StyleSheet, Image, FlatList, ActivityIndicator, Pressable, ScrollView} from 'react-native';
 import {router, useFocusEffect} from "expo-router";
 import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
+import CreateCollectionModal from "@/components/CreateCollectionModal";
 import Post from "@/components/Post";
 import React, {useEffect, useCallback} from "react";
 import {Colours} from "@/theme/colours";
@@ -73,14 +74,18 @@ export function useProfileCollections() {
 
 export default function ProfilePage() {
     const { posts, loadingPosts } = useProfilePosts();
-    const { collections, loadingCollections } = useProfileCollections();
+    const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
+    const [modalVisible, setModalVisible] = useState(false);
 
     if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
     if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
 
     return (
-        <View style={styles.container}>
+        <ScrollView 
+            style={styles.container}
+            stickyHeaderIndices={[1]}
+        >
             <View style={styles.profileHeader}>
                 <Image
                     source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
@@ -165,29 +170,48 @@ export default function ProfilePage() {
                     />
                 </View>
                 {activeTab === "collections" ? (
-                    <FlatList
-                        key="collections"
-                        data={collections}
-                        numColumns={2}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => <CollectionButton item={item} />}
-                    />
+                    <View style={styles.collectionsContainer}>
+                        <View style={styles.collectionRow}>
+                            <View style={styles.createButtonContainer}>
+                                <Pressable 
+                                    style={styles.createCollectionButton}
+                                    onPress={() => setModalVisible(true)}
+                                >
+                                    <Text style={styles.createCollectionText}>+</Text>
+                                </Pressable>
+                            </View>
+                            {collections.length > 0 && (
+                                <CollectionButton item={collections[0]} />
+                            )}
+                        </View>
+                        {collections.slice(1).map((item, index) => (
+                            <View key={item.id} style={styles.collectionRow}>
+                                <CollectionButton item={item} />
+                                {collections.length > index + 2 && (
+                                    <CollectionButton item={collections[index + 2]} />
+                                )}
+                            </View>
+                        ))}
+                    </View>
                 ) : (
-                    <FlatList
-                        data={posts}
-                        numColumns={2}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
+                    <View style={styles.collectionsContainer}>
+                        {posts.slice(0, 2).map((item) => (
                             <Post
+                                key={item.id}
                                 item={item}
                                 onPress={() => handlePostPress(item.id)}
                             />
-                        )}
-                    />
+                        ))}
+                    </View>
                 )}
 
             </View>
-        </View>
+            <CreateCollectionModal 
+                visible={modalVisible} 
+                onClose={() => setModalVisible(false)}
+                onSuccess={refreshCollections}
+            />
+        </ScrollView>
     );
 }
 
@@ -195,15 +219,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#121417',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     profileHeader: {
-        flex: 2,
-        marginTop: 20,
+        flex: 0,
+        paddingTop: 20,
+        paddingBottom: 16,
         width: '100%',
         backgroundColor: '#121417',
-        justifyContent: 'center',
         alignItems: 'center',
     },
     profilePicture:{
@@ -229,13 +251,12 @@ const styles = StyleSheet.create({
     },
     profileActions: {
         backgroundColor:"#121417",
-        flex:1,
         width: '100%',
         flexDirection: 'column',
         alignItems: 'center',
     },
     profileContentTabs: {
-        flex:3,
+        flex: 1,
         backgroundColor: '#181B20',
         width: '100%',
     },
@@ -305,5 +326,37 @@ const styles = StyleSheet.create({
     },
     showPostsButton: {
 
+    },
+    createCollectionButton: {
+        backgroundColor: '#333',
+        alignItems: 'center',
+        justifyContent: 'center',
+        aspectRatio: 2/3,
+        borderRadius: 12,
+        flex: 1,
+    },
+    createButtonContainer: {
+        flex: 1,
+        marginHorizontal: 6,
+        marginVertical: 6,
+        maxWidth: '50%',
+    },
+    createCollectionText: {
+        color: '#888',
+        fontSize: 40,
+        fontWeight: '300',
+    },
+    collectionRow: {
+        paddingHorizontal: 6,
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+    },
+    collectionsList: {
+        paddingHorizontal: 6,
+        paddingBottom: 20,
+    },
+    collectionsContainer: {
+        flex: 1,
+        paddingHorizontal: 6,
     },
 });

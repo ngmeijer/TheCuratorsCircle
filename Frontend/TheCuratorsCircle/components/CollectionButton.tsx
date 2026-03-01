@@ -18,7 +18,11 @@ export default function CollectionButton({item}: CollectionProps) {
         <View style={styles.collectionContainer}>
             <View style={styles.imageWrapper}>
                 {hasPoster ? (
-                    <Image source={{ uri: item.posterUrl! }} style={styles.image} />
+                    <Image 
+                        source={{ uri: item.posterUrl! }} 
+                        style={styles.image} 
+                        resizeMode="cover"
+                    />
                 ) : (
                     <View style={[styles.image, styles.placeholder]}>
                         <Text style={{ color: 'white', fontSize: 32 }}>📁</Text>
@@ -38,51 +42,47 @@ export default function CollectionButton({item}: CollectionProps) {
 
 const styles = StyleSheet.create({
     collectionContainer: {
-        alignItems: 'center',
         flex: 1,
-        marginHorizontal: 10,
-        marginVertical: 5,
-        maxWidth: "48%",
+        marginHorizontal: 6,
+        marginVertical: 6,
+        maxWidth: '50%',
     },
     imageWrapper: {
-        position:'relative',
-        borderRadius:12,
+        position: 'relative',
+        borderRadius: 12,
         overflow: 'hidden',
-        width: '100%',
-        aspectRatio: 1
     },
     image: {
         width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-        borderRadius: 15
+        aspectRatio: 2/3,
+        borderRadius: 12,
     },
     nameOverlay: {
         position: 'absolute',
-        width: '90%',
         top: 8,
         left: 8,
+        right: 8,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal:8,
-        paddingVertical:4,
-        borderRadius:12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     itemCountOverlay: {
-      position: 'absolute',
-      bottom: 8,
-      right: 8,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal:8,
-      paddingVertical:4,
-      borderRadius:12,
+        position: 'absolute',
+        bottom: 8,
+        right: 8,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     name: {
-        color:'white'
+        color: 'white',
+        fontSize: 12,
     },
     itemCount: {
         color: 'white',
-        padding: 5,
-        borderRadius: 6
+        fontSize: 10,
     },
     placeholder: {
         backgroundColor: '#333',
