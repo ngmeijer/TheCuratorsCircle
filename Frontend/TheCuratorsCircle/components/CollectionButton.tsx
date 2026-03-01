@@ -77,11 +77,11 @@ const styles = StyleSheet.create({
     },
     name: {
         color: 'white',
-        fontSize: 12,
+        fontSize: 14,
     },
     itemCount: {
         color: 'white',
-        fontSize: 10,
+        fontSize: 12,
     },
     placeholder: {
         backgroundColor: '#333',
