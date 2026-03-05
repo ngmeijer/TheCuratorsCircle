@@ -6,12 +6,12 @@ import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import CreateCollectionModal from "@/components/CreateCollectionModal";
 import Post from "@/components/Post";
-import React, {useEffect, useCallback} from "react";
+import React, {useEffect, useCallback, useState} from "react";
 import {Colours} from "@/theme/colours";
-import { useState } from "react";
-import {getCollections, getPosts} from "@/api/databaseClient";
+import {getCollections, getPosts, getUserProfileByAlias, createUserProfile} from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
+import { UserProfileDto } from "@/DTOs/UserProfileDto";
 
 function handleEditProfile(){
 
@@ -23,6 +23,32 @@ const handlePostPress = (postId: string) => {
         pathname: "/postDetails",
         params: { id: postId}
     });
+}
+
+export function useUserProfile(alias: string) {
+    const [profile, setProfile] = useState<UserProfileDto | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadProfile = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getUserProfileByAlias(alias);
+            setProfile(data);
+        } catch (err: any) {
+            console.error("Error loading profile:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [alias]);
+
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
+
+    return { profile, loading, error, refresh: loadProfile };
 }
 
 export function useProfilePosts() {
@@ -74,7 +100,11 @@ export function useProfileCollections() {
 }
 
 export default function ProfilePage() {
+    // TODO: Get this from auth context after login
+    const CURRENT_USER_ALIAS = "@testerJerry";
+    
     const { width } = useWindowDimensions();
+    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile(CURRENT_USER_ALIAS);
     const { posts, loadingPosts } = useProfilePosts();
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
@@ -82,8 +112,52 @@ export default function ProfilePage() {
 
     const createButtonWidth = (width - 24) / 2;
 
-    if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
-    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
+    // Get current username and display name from profile
+    const currentUsername = profile?.usernamesHistory?.[0] || CURRENT_USER_ALIAS;
+    const displayName = profile?.displayName || "Your Name";
+    const bio = profile?.bio || "No bio yet. Tap edit to add one!";
+    const collectionsCount = collections?.length || 0;
+
+    if (loadingProfile || loadingPosts || loadingCollections) {
+        return <ActivityIndicator size="large" color="#fff" />;
+    }
+
+    // Show error or prompt to create profile if not found
+    if (profileError || !profile) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.profileHeader}>
+                    <Image
+                        source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
+                        style={styles.profilePicture}
+                    />
+                    <Text style={styles.fullName}>No Profile Found</Text>
+                    <Text style={styles.username}>@{CURRENT_USER_ALIAS.replace('@', '')}</Text>
+                    <Text style={styles.biography}>
+                        {profileError ? `Error: ${profileError}` : "Create your profile to get started!"}
+                    </Text>
+                </View>
+                <View style={styles.profileActions}>
+                    <StyledButton
+                        style={styles.editProfileButton}
+                        title="Create Profile"
+                        onPress={async () => {
+                            try {
+                                await createUserProfile({
+                                    username: CURRENT_USER_ALIAS,
+                                    displayName: "Your Name",
+                                    bio: "Tell us about yourself!"
+                                });
+                                refreshProfile();
+                            } catch (err: any) {
+                                console.error("Error creating profile:", err);
+                            }
+                        }}
+                    />
+                </View>
+            </View>
+        );
+    }
 
     const renderHeader = () => (
         <View>
@@ -94,24 +168,17 @@ export default function ProfilePage() {
                 />
 
                 <Text style={styles.fullName}>
-                    Jerry Meijer
+                    {displayName}
                 </Text>
-                <Text style={styles.username}>@testerJerry</Text>
-                <Text style={styles.biography}>miauw miauw miauw.
-
-                    miau miauw, meow miaow miauw… miauw miauw.
-                    miauw miauw miauw miauw.
-
-                    meow miaow,
-                    miauw miau miauw.
-                    miauw… miauw..</Text>
+                <Text style={styles.username}>{currentUsername}</Text>
+                <Text style={styles.biography}>{bio}</Text>
             </View>
 
             <View style={styles.profileActions}>
                 <View style={styles.dataButtons}>
                     <DynamicDataButton
                         name="Collections"
-                        data="5"
+                        data={String(collectionsCount)}
                         onPress={() => router.push("/collectionsPage")}
                         buttonStyle={styles.button}
                         nameTextStyle={styles.detailsNameButton}
@@ -119,7 +186,7 @@ export default function ProfilePage() {
                     />
                     <DynamicDataButton
                         name="Followers"
-                        data="5"
+                        data="0"
                         onPress={() => router.push("/collectionsPage")}
                         buttonStyle={styles.button}
                         nameTextStyle={styles.detailsNameButton}
@@ -127,7 +194,7 @@ export default function ProfilePage() {
                     />
                     <DynamicDataButton
                         name="Following"
-                        data="5"
+                        data="0"
                         onPress={() => router.push("/collectionsPage")}
                         buttonStyle={styles.button}
                         nameTextStyle={styles.detailsNameButton}
@@ -184,24 +251,17 @@ export default function ProfilePage() {
                 />
 
                 <Text style={styles.fullName}>
-                    Jerry Meijer
+                    {displayName}
                 </Text>
-                <Text style={styles.username}>@testerJerry</Text>
-                <Text style={styles.biography}>miauw miauw miauw.
-
-                    miau miauw, meow miaow miauw… miauw miauw.
-                    miauw miauw miauw miauw.
-
-                    meow miaow,
-                    miauw miau miauw.
-                    miauw… miauw..</Text>
+                <Text style={styles.username}>{currentUsername}</Text>
+                <Text style={styles.biography}>{bio}</Text>
             </View>
 
             <View style={styles.profileActions}>
                 <View style={styles.dataButtons}>
                     <DynamicDataButton
                         name="Collections"
-                        data="5"
+                        data={String(collectionsCount)}
                         onPress={() => router.push("/collectionsPage")}
                         buttonStyle={styles.button}
                         nameTextStyle={styles.detailsNameButton}
@@ -209,7 +269,7 @@ export default function ProfilePage() {
                     />
                     <DynamicDataButton
                         name="Followers"
-                        data="5"
+                        data="0"
                         onPress={() => router.push("/collectionsPage")}
                         buttonStyle={styles.button}
                         nameTextStyle={styles.detailsNameButton}
@@ -217,7 +277,7 @@ export default function ProfilePage() {
                     />
                     <DynamicDataButton
                         name="Following"
-                        data="5"
+                        data="0"
                         onPress={() => router.push("/collectionsPage")}
                         buttonStyle={styles.button}
                         nameTextStyle={styles.detailsNameButton}
