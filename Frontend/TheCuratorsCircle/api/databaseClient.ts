@@ -310,3 +310,36 @@ export async function createUserProfile(payload: CreateUserProfilePayload): Prom
     console.log("User profile created:", receivedData);
     return receivedData;
 }
+
+export interface UpdateUserProfilePayload {
+    username?: string;
+    displayName?: string;
+    bio?: string;
+    isPublic?: boolean;
+}
+
+export async function updateUserProfile(persistentId: string, payload: UpdateUserProfilePayload): Promise<any> {
+    console.log("Updating user profile:", persistentId, payload);
+    const response = await fetch(`http://${ipadress}:5044/userprofiles/${persistentId}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        let responseText = "";
+        try {
+            responseText = await response.text();
+            console.log("Error response text:", responseText);
+            const data = JSON.parse(responseText);
+            throw new Error(data.message || `Error ${response.status}`);
+        } catch (e: any) {
+            if (e instanceof Error && e.message.includes("Error")) throw e;
+            throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
+        }
+    }
+
+    const receivedData = await response.json();
+    console.log("User profile updated:", receivedData);
+    return receivedData;
+}

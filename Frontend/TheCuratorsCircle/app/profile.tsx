@@ -5,6 +5,7 @@ import {DynamicDataButton} from "@/components/DynamicDataButton";
 import {StyledButton} from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import CreateCollectionModal from "@/components/CreateCollectionModal";
+import EditProfileModal from "@/components/EditProfileModal";
 import Post from "@/components/Post";
 import React, {useEffect, useCallback, useState} from "react";
 import {Colours} from "@/theme/colours";
@@ -12,10 +13,6 @@ import {getCollections, getPosts, getUserProfileByAlias, createUserProfile} from
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
-
-function handleEditProfile(){
-
-}
 
 const handlePostPress = (postId: string) => {
     console.log(`Navigating to post: ${postId}`);
@@ -109,6 +106,11 @@ export default function ProfilePage() {
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
+    const [editModalVisible, setEditModalVisible] = useState(false);
+
+    const handleEditProfile = () => {
+        setEditModalVisible(true);
+    };
 
     const createButtonWidth = (width - 24) / 2;
 
@@ -367,6 +369,15 @@ export default function ProfilePage() {
             onSuccess={() => {
                 setModalVisible(false);
                 refreshCollections();
+            }}
+        />
+        <EditProfileModal 
+            visible={editModalVisible}
+            profile={profile}
+            onClose={() => setEditModalVisible(false)}
+            onSuccess={() => {
+                setEditModalVisible(false);
+                refreshProfile();
             }}
         />
         </>

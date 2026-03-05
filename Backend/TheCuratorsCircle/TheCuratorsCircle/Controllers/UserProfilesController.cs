@@ -44,4 +44,14 @@ public class UserProfilesController : ControllerBase
 
         return CreatedAtAction(nameof(GetByPersistentId), new { persistentId = profile.PersistentId }, profile);
     }
+
+    [HttpPut("{persistentId}")]
+    public async Task<IActionResult> Update(string persistentId, [FromBody] UpdateUserProfileRequest request)
+    {
+        var (profile, error) = await _profileService.UpdateAsync(persistentId, request);
+        if (error != null)
+            return BadRequest(new { error });
+
+        return Ok(profile);
+    }
 }
