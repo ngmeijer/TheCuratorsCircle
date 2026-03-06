@@ -160,7 +160,7 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        height: '100%',
         justifyContent: 'flex-end',
     },
     container: {

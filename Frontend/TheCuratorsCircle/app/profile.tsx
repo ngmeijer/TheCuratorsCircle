@@ -1,19 +1,20 @@
 ﻿import {Text, View, StyleSheet, Image, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
-import {FlashList} from '@shopify/flash-list';
-import {router, useFocusEffect} from "expo-router";
-import {DynamicDataButton} from "@/components/DynamicDataButton";
-import {StyledButton} from "@/components/StyledButton";
+import { FlashList } from '@shopify/flash-list';
+import { router, useFocusEffect } from "expo-router";
+import { DynamicDataButton } from "@/components/DynamicDataButton";
+import { StyledButton } from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import CreateCollectionModal from "@/components/CreateCollectionModal";
 import EditProfileModal from "@/components/EditProfileModal";
 import Post from "@/components/Post";
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, {useEffect, useCallback, useState} from "react";
-import {Colours} from "@/theme/colours";
-import {getCollections, getPosts, getUserProfileByAlias, createUserProfile} from "@/api/databaseClient";
+import React, { useEffect, useCallback, useState } from "react";
+import { Colours } from "@/theme/colours";
+import { getCollections, getPosts, getUserProfileByAlias, createUserProfile } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const handlePostPress = (postId: string) => {
     console.log(`Navigating to post: ${postId}`);
@@ -232,7 +233,11 @@ export default function ProfilePage() {
 
     return (
         <>
-            <ScrollView style={styles.container} stickyHeaderIndices={[1]}>
+            <ScrollView 
+                style={styles.container} 
+                stickyHeaderIndices={[1]}
+                contentInsetAdjustmentBehavior="automatic"
+            >
             <View style={styles.profileHeader}>
                 <View style={styles.profileLeftSection}>
                     <Text style={styles.fullName}>
@@ -360,13 +365,13 @@ export default function ProfilePage() {
 const styles = StyleSheet.create({
     container: {
         flex:1,
-        backgroundColor: '#121417',
+        backgroundColor: '#0d0f12',
     },
     profileHeader: {
-        paddingTop: 0,
-        paddingBottom: 8,
+        paddingTop: 8,
+        paddingBottom: 0,
         width: '100%',
-        backgroundColor: '#121417',
+        backgroundColor: '#1a1d23',
         flexDirection: 'row',
         alignItems: 'center',
         flexWrap: 'wrap',
@@ -375,15 +380,15 @@ const styles = StyleSheet.create({
         width: '70%',
         paddingRight: 12,
         paddingLeft: 16,
+        paddingTop: 28,
         justifyContent: 'center',
-        backgroundColor: '#121417',
+        backgroundColor: '#1a1d23',
     },
     profileRightSection: {
         width: '30%',
-        alignItems: 'center',
-        paddingRight: 12,
+        alignItems: "center",
+        paddingRight: 24,
         paddingTop: 30,
-        backgroundColor: '#121417',
     },
     statsColumn: {
         alignItems: 'center',
@@ -391,7 +396,7 @@ const styles = StyleSheet.create({
     },
     statItem: {
         alignItems: 'center',
-        marginVertical: 8,
+        marginVertical: 2,
     },
     statData: {
         color: Colours.textPrimary,
@@ -401,7 +406,6 @@ const styles = StyleSheet.create({
     statName: {
         color: '#888',
         fontSize: 12,
-        marginTop: 2,
     },
     profilePicture: {
         width: 70,
@@ -425,10 +429,10 @@ const styles = StyleSheet.create({
         fontFamily: "Inter_400Regular",
         textAlign: 'left',
         backgroundColor: '#2A2E35',
-        padding: 12,
+        padding: 4,
         borderRadius: 8,
         marginTop: 8,
-        minHeight: 120,
+        minHeight: 140,
     },
     editButtonContainer: {
         width: '100%',
@@ -439,14 +443,14 @@ const styles = StyleSheet.create({
     editButton: {
         position: 'absolute',
         top: 50,
-        right: 8,
+        right: 2,
         backgroundColor: '#7C6DFF',
         padding: 8,
         borderRadius: 20,
     },
     profileContentTabs: {
-        backgroundColor: '#181B20',
         width: '100%',
+        backgroundColor:"#1a1d23",
     },
     collectionsGrid: {
         flex: 1,
