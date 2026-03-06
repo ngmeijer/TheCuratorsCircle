@@ -5,6 +5,7 @@ import { ImageTextInput } from "@/components/ImageTextInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {login} from "@/api/auth/auth";
 import {signup} from "@/api/auth/auth";
+import {setAuthToken} from "@/api/databaseClient";
 import {useState} from "react";
 import {router} from "expo-router";
 
@@ -22,8 +23,11 @@ export default function Login() {
         try {
             setErrorMessage(null);
             console.log("Provided email: " + email + ", provided password: " + password);
-            const result = await login(email, password); // call backend
+            const result = await login(email, password);
             console.log("Logged in:", result);
+            if (result.token) {
+                setAuthToken(result.token);
+            }
             router.push("/forYouPage")
         } catch (error : any) {
             console.error(error);
@@ -40,8 +44,11 @@ export default function Login() {
         try {
             setErrorMessage(null);
             console.log("Provided email: " + email + ", provided password: " + password);
-            const result = await signup(email, password); // call backend
+            const result = await signup(email, password);
             console.log("Signed up:", result);
+            if (result.token) {
+                setAuthToken(result.token);
+            }
             router.push("/forYouPage")
         } catch (error : any) {
             console.error(error);

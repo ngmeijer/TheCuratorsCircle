@@ -1,4 +1,4 @@
-﻿import {Text, View, StyleSheet, Image, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
+﻿import {Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, useWindowDimensions, TextInput} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router, useFocusEffect } from "expo-router";
 import { DynamicDataButton } from "@/components/DynamicDataButton";
@@ -10,7 +10,7 @@ import Post from "@/components/Post";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useCallback, useState } from "react";
 import { Colours } from "@/theme/colours";
-import { getCollections, getPosts, getUserProfileByAlias, createUserProfile } from "@/api/databaseClient";
+import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, createUserProfile } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
@@ -24,7 +24,7 @@ const handlePostPress = (postId: string) => {
     });
 }
 
-export function useUserProfile(alias: string) {
+export function useUserProfile(alias?: string) {
     const [profile, setProfile] = useState<UserProfileDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,12 @@ export function useUserProfile(alias: string) {
         setLoading(true);
         setError(null);
         try {
-            const data = await getUserProfileByAlias(alias);
+            let data;
+            if (alias) {
+                data = await getUserProfileByAlias(alias);
+            } else {
+                data = await getCurrentUserProfile();
+            }
             setProfile(data);
         } catch (err: any) {
             console.error("Error loading profile:", err);
@@ -99,25 +104,55 @@ export function useProfileCollections() {
 }
 
 export default function ProfilePage() {
-    // TODO: Get this from auth context after login
-    const CURRENT_USER_ALIAS = "@testerJerry";
-    
     const { width } = useWindowDimensions();
-    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile(CURRENT_USER_ALIAS);
+    const insets = useSafeAreaInsets();
+    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile();
     const { posts, loadingPosts } = useProfilePosts();
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
+    
+    const [newUsername, setNewUsername] = useState('');
+    const [newDisplayName, setNewDisplayName] = useState('');
+    const [newBio, setNewBio] = useState('');
+    const [creatingProfile, setCreatingProfile] = useState(false);
+    const [createError, setCreateError] = useState('');
 
     const handleEditProfile = () => {
         setEditModalVisible(true);
     };
 
+    const handleCreateProfileSubmit = async () => {
+        if (!newUsername.trim()) {
+            setCreateError('Username is required');
+            return;
+        }
+        if (!newUsername.startsWith('@')) {
+            setCreateError('Username must start with @');
+            return;
+        }
+
+        setCreatingProfile(true);
+        setCreateError('');
+        try {
+            await createUserProfile({
+                username: newUsername.trim(),
+                displayName: newDisplayName.trim(),
+                bio: newBio.trim(),
+            });
+            refreshProfile();
+        } catch (err: any) {
+            setCreateError(err.message || 'Failed to create profile');
+        } finally {
+            setCreatingProfile(false);
+        }
+    };
+
     const createButtonWidth = (width - 24) / 2;
 
     // Get current username and display name from profile
-    const currentUsername = profile?.usernamesHistory?.[0] || CURRENT_USER_ALIAS;
+    const currentUsername = profile?.usernamesHistory?.[0] || "@username";
     const displayName = profile?.displayName || "Your Name";
     const bio = profile?.bio || "No bio yet. Tap edit to add one!";
     const collectionsCount = collections?.length || 0;
@@ -129,114 +164,80 @@ export default function ProfilePage() {
     // Show error or prompt to create profile if not found
     if (profileError || !profile) {
         return (
-            <View style={styles.container}>
-                <View style={styles.profileHeader}>
-                    <Image
-                        source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
-                        style={styles.profilePicture}
-                    />
-                    <Text style={styles.fullName}>No Profile Found</Text>
-                    <Text style={styles.username}>@{CURRENT_USER_ALIAS.replace('@', '')}</Text>
-                    <Text style={styles.biography}>
-                        {profileError ? `Error: ${profileError}` : "Create your profile to get started!"}
-                    </Text>
-                </View>
-                <View style={styles.editButtonContainer}>
-                    <StyledButton
-                        style={styles.editProfileButton}
-                        title="Create Profile"
-                        onPress={async () => {
-                            try {
-                                await createUserProfile({
-                                    username: CURRENT_USER_ALIAS,
-                                    displayName: "Your Name",
-                                    bio: "Tell us about yourself!"
-                                });
-                                refreshProfile();
-                            } catch (err: any) {
-                                console.error("Error creating profile:", err);
-                            }
-                        }}
-                    />
-                </View>
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                <ScrollView contentContainerStyle={styles.createProfileContainer}>
+                    <View style={styles.createProfileHeader}>
+                        <View style={styles.placeholderProfilePicture}>
+                            <Ionicons name="person" size={40} color="#666" />
+                        </View>
+                    </View>
+
+                    <View style={styles.createProfileForm}>
+                        <Text style={styles.inputLabel}>Username</Text>
+                        <TextInput
+                            style={styles.createProfileInput}
+                            placeholder="@username"
+                            placeholderTextColor="#666"
+                            value={newUsername}
+                            onChangeText={(text) => {
+                                setNewUsername(text);
+                                setCreateError('');
+                            }}
+                            maxLength={30}
+                            autoCapitalize="none"
+                        />
+
+                        <Text style={styles.inputLabel}>Display Name</Text>
+                        <TextInput
+                            style={styles.createProfileInput}
+                            placeholder="Your name"
+                            placeholderTextColor="#666"
+                            value={newDisplayName}
+                            onChangeText={(text) => {
+                                setNewDisplayName(text);
+                                setCreateError('');
+                            }}
+                            maxLength={50}
+                        />
+
+                        <Text style={styles.inputLabel}>Bio</Text>
+                        <TextInput
+                            style={[styles.createProfileInput, styles.bioInput]}
+                            placeholder="Write something about yourself here!"
+                            placeholderTextColor="#666"
+                            value={newBio}
+                            onChangeText={(text) => {
+                                setNewBio(text);
+                                setCreateError('');
+                            }}
+                            maxLength={500}
+                            multiline
+                            numberOfLines={4}
+                            textAlignVertical="top"
+                        />
+
+                        {createError ? (
+                            <Text style={styles.errorText}>{createError}</Text>
+                        ) : null}
+
+                        <StyledButton
+                            style={styles.createProfileButton}
+                            title={creatingProfile ? "Creating..." : "Create Profile"}
+                            onPress={handleCreateProfileSubmit}
+                            disabled={creatingProfile}
+                        />
+                    </View>
+                </ScrollView>
             </View>
         );
     }
 
-    const renderHeader = () => (
-        <View>
-            <View style={styles.profileHeader}>
-                <View style={styles.profileLeftSection}>
-                    <Text style={styles.fullName}>
-                        {displayName}
-                    </Text>
-                    <Text style={styles.username}>{currentUsername}</Text>
-                    <Text style={styles.biography}>{bio}</Text>
-                </View>
-                
-                <View style={styles.profileRightSection}>
-                    <Image
-                        source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
-                        style={styles.profilePicture}
-                    />
-                    <Pressable style={styles.editButton} onPress={handleEditProfile}>
-                        <Ionicons name="pencil" size={18} color="#fff" />
-                    </Pressable>
-                    <View style={styles.statsColumn}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>{collectionsCount}</Text>
-                            <Text style={styles.statName}>Collections</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>0</Text>
-                            <Text style={styles.statName}>Followers</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>0</Text>
-                            <Text style={styles.statName}>Following</Text>
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-            <View style={styles.profileContentTabs}>
-                <View style={styles.profileContentButtons}>
-                    <StyledButton
-                        title="Collections"
-                        onPress={() => setActiveTab("collections")}
-                        style={[
-                            styles.tabButton,
-                            activeTab === "collections" && styles.activeTabButton
-                        ]}
-                        textStyle={[
-                            styles.tabButtonText,
-                            activeTab === "collections" && styles.activeTabText
-                        ]}
-                    />
-
-                    <StyledButton
-                        title="Posts"
-                        onPress={() => setActiveTab("posts")}
-                        style={[
-                            styles.tabButton,
-                            activeTab === "posts" && styles.activeTabButton
-                        ]}
-                        textStyle={[
-                            styles.tabButtonText,
-                            activeTab === "posts" && styles.activeTabText
-                        ]}
-                    />
-                </View>
-            </View>
-        </View>
-    );
-
     return (
         <>
             <ScrollView 
-                style={styles.container} 
+                style={[styles.container, { paddingTop: insets.top }]} 
                 stickyHeaderIndices={[1]}
-                contentInsetAdjustmentBehavior="automatic"
+                contentInsetAdjustmentBehavior="never"
             >
             <View style={styles.profileHeader}>
                 <View style={styles.profileLeftSection}>
@@ -248,10 +249,9 @@ export default function ProfilePage() {
                 </View>
                 
                 <View style={styles.profileRightSection}>
-                    <Image
-                        source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
-                        style={styles.profilePicture}
-                    />
+                    <View style={styles.profilePicturePlaceholder}>
+                        <Ionicons name="person" size={40} color="#666" />
+                    </View>
                     <Pressable style={styles.editButton} onPress={handleEditProfile}>
                         <Ionicons name="pencil" size={18} color="#fff" />
                     </Pressable>
@@ -322,12 +322,12 @@ export default function ProfilePage() {
                                     item={item} 
                                 />
                             );
-                        }}
-                        masonry
-                        numColumns={2}
-                        keyExtractor={(item: any) => item.id}
-                        contentContainerStyle={styles.listContent}
-                    />
+                }}
+                masonry
+                numColumns={2}
+                keyExtractor={(item: any) => item.id}
+                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+            />
                 </View>
             ) : (
                 <View style={styles.collectionsGrid}>
@@ -413,6 +413,15 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         marginBottom: 8,
     },
+    profilePicturePlaceholder: {
+        width: 70,
+        height: 70,
+        borderRadius: 25,
+        marginBottom: 8,
+        backgroundColor: '#2A2E35',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     fullName: {
         color: Colours.textPrimary,
         fontFamily: "LeagueSpartan_600SemiBold",
@@ -497,5 +506,56 @@ const styles = StyleSheet.create({
         backgroundColor: '#7C6DFF',
         marginVertical: 10,
         alignSelf: 'center',
+    },
+    createProfileContainer: {
+        padding: 16,
+        alignItems: 'center',
+    },
+    createProfileHeader: {
+        alignItems: 'center',
+        marginBottom: 24,
+        marginTop: 20,
+    },
+    placeholderProfilePicture: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#2A2E35',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    createProfileForm: {
+        width: '100%',
+        paddingHorizontal: 8,
+    },
+    inputLabel: {
+        color: '#aaa',
+        fontSize: 14,
+        marginBottom: 8,
+        marginTop: 12,
+    },
+    createProfileInput: {
+        backgroundColor: '#2A2E35',
+        borderRadius: 8,
+        padding: 12,
+        color: '#fff',
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    bioInput: {
+        height: 100,
+        paddingTop: 12,
+    },
+    errorText: {
+        color: '#ff6b6b',
+        fontSize: 14,
+        marginTop: 12,
+        textAlign: 'center',
+    },
+    createProfileButton: {
+        width: '100%',
+        backgroundColor: '#7C6DFF',
+        marginTop: 24,
     },
 });

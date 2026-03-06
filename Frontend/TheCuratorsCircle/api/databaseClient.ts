@@ -311,6 +311,34 @@ export async function createUserProfile(payload: CreateUserProfilePayload): Prom
     return receivedData;
 }
 
+export async function getCurrentUserProfile(): Promise<any> {
+    console.log("Getting current user profile");
+    const response = await fetch(`http://${ipadress}:5044/userprofiles/me`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            return null;
+        }
+        let responseText = "";
+        try {
+            responseText = await response.text();
+            console.log("Error response text:", responseText);
+            const data = JSON.parse(responseText);
+            throw new Error(data.message || `Error ${response.status}`);
+        } catch (e: any) {
+            if (e instanceof Error && e.message.includes("Error")) throw e;
+            throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
+        }
+    }
+
+    const receivedData = await response.json();
+    console.log("Current user profile received:", receivedData);
+    return receivedData;
+}
+
 export interface UpdateUserProfilePayload {
     username?: string;
     displayName?: string;

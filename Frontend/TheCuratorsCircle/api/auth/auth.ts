@@ -30,7 +30,7 @@ export async function login(email : string, password: string) {
 export async function signup(email : string, password: string) {
     const json = JSON.stringify({email, password});
 
-    const response = await fetch("http://100.90.173.113:5044/auth/signup", {
+    const response = await fetch(`http://${ipadress}:5044/auth/signup`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

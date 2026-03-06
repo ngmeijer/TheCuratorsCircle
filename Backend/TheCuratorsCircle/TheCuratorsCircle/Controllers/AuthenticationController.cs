@@ -35,18 +35,16 @@ public class AuthenticationController : ControllerBase
 
         try
         {
-            var firebaseToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
+            var idToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
 
-            if (firebaseToken == null)
+            if (idToken == null)
             {
                 return BadRequest(new { message = "Invalid credentials."});
             }
 
-            var jwt = JwtTokenGenerator.GenerateToken(request.Email);
-
             return Ok(new
             {
-                token = jwt
+                token = idToken
             });
         }
         catch (Exception ex)
@@ -67,18 +65,16 @@ public class AuthenticationController : ControllerBase
         {
             var userRecord = await _auth.CreateUserAsync(new UserRecordArgs(){Email = request.Email, Password = request.Password});
             
-            var firebaseToken  = await VerifyCredentialsWithFirebase(request.Email, request.Password);
+            var idToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
 
-            if (firebaseToken == null)
+            if (idToken == null)
             {
                 return StatusCode(500, new {message = "Account created but failed to log in."});
             }
             
-            var jwt = JwtTokenGenerator.GenerateToken(request.Email);
-
             return Ok(new
             {
-                token = jwt
+                token = idToken
             });
         }
         catch (FirebaseAuthException ex) when (ex.AuthErrorCode == AuthErrorCode.EmailAlreadyExists)

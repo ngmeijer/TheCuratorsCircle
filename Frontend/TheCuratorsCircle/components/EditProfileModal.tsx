@@ -12,17 +12,19 @@ import {
     ScrollView,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { updateUserProfile, UpdateUserProfilePayload } from '@/api/databaseClient';
+import { updateUserProfile, createUserProfile, UpdateUserProfilePayload } from '@/api/databaseClient';
 import { UserProfileDto } from '@/DTOs/UserProfileDto';
 
 interface EditProfileModalProps {
     visible: boolean;
-    profile: UserProfileDto;
+    profile?: UserProfileDto;
     onClose: () => void;
     onSuccess?: () => void;
 }
 
 export default function EditProfileModal({ visible, profile, onClose, onSuccess }: EditProfileModalProps) {
+    const isCreateMode = !profile;
+    
     const [username, setUsername] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [bio, setBio] = useState('');
@@ -30,10 +32,16 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (visible && profile) {
-            setUsername(profile.usernamesHistory?.[0] || '');
-            setDisplayName(profile.displayName || '');
-            setBio(profile.bio || '');
+        if (visible) {
+            if (profile) {
+                setUsername(profile.usernamesHistory?.[0] || '');
+                setDisplayName(profile.displayName || '');
+                setBio(profile.bio || '');
+            } else {
+                setUsername('');
+                setDisplayName('');
+                setBio('');
+            }
             setError('');
         }
     }, [visible, profile]);
@@ -52,16 +60,24 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
         setLoading(true);
         setError('');
         try {
-            const payload: UpdateUserProfilePayload = {
-                username: username.trim(),
-                displayName: displayName.trim(),
-                bio: bio.trim(),
-            };
-            await updateUserProfile(profile.persistentId, payload);
+            if (isCreateMode) {
+                await createUserProfile({
+                    username: username.trim(),
+                    displayName: displayName.trim(),
+                    bio: bio.trim(),
+                });
+            } else {
+                const payload: UpdateUserProfilePayload = {
+                    username: username.trim(),
+                    displayName: displayName.trim(),
+                    bio: bio.trim(),
+                };
+                await updateUserProfile(profile.persistentId, payload);
+            }
             onSuccess?.();
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Failed to update profile');
+            setError(err.message || `Failed to ${isCreateMode ? 'create' : 'update'} profile`);
         } finally {
             setLoading(false);
         }
@@ -85,7 +101,9 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
             >
                 <View style={styles.container}>
                     <View style={styles.header}>
-                        <Text style={styles.title}>Edit Profile</Text>
+                        <Text style={styles.title}>
+                            {isCreateMode ? 'Create Profile' : 'Edit Profile'}
+                        </Text>
                         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                             <Ionicons name="close" size={24} color="#fff" />
                         </TouchableOpacity>
@@ -147,7 +165,9 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
                             {loading ? (
                                 <ActivityIndicator size="small" color="#fff" />
                             ) : (
-                                <Text style={styles.buttonText}>Save Changes</Text>
+                                <Text style={styles.buttonText}>
+                                    {isCreateMode ? 'Create Profile' : 'Save Changes'}
+                                </Text>
                             )}
                         </TouchableOpacity>
                     </ScrollView>

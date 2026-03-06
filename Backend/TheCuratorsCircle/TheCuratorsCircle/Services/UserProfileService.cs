@@ -10,8 +10,9 @@ namespace Backend.Services
   {
     Task<UserProfile> GetByPersistentIdAsync(string persistentId);
     Task<UserProfile> GetByAliasAsync(string alias);
+    Task<UserProfile> GetByOwnerUidAsync(string ownerUid);
     Task<(UserProfile Profile, string Error)> CreateAsync(string ownerUid, CreateUserProfileRequest request);
-    Task<(UserProfile Profile, string Error)> UpdateAsync(string persistentId, UpdateUserProfileRequest request);
+    Task<(UserProfile Profile, string Error)> UpdateAsync(string persistentId, string ownerUid, UpdateUserProfileRequest request);
   }
 
   public class UserProfileService : IUserProfileService
@@ -43,8 +44,25 @@ namespace Backend.Services
       return await GetByPersistentIdAsync(mapping.PersistentId);
     }
 
+    public async Task<UserProfile> GetByOwnerUidAsync(string ownerUid)
+    {
+      var snapshot = await _db.Collection("userProfiles")
+          .WhereEqualTo("OwnerUid", ownerUid)
+          .Limit(1)
+          .GetSnapshotAsync();
+      
+      if (snapshot.Documents.Count == 0) return null;
+      
+      return snapshot.Documents[0].ConvertTo<UserProfile>();
+    }
+
     public async Task<(UserProfile Profile, string Error)> CreateAsync(string ownerUid, CreateUserProfileRequest request)
     {
+      // Check if user already has a profile
+      var existingProfile = await GetByOwnerUidAsync(ownerUid);
+      if (existingProfile != null)
+        return (null, "You already have a profile");
+
       if (string.IsNullOrEmpty(request.Username))
         return (null, "Username is required");
       
@@ -92,7 +110,7 @@ namespace Backend.Services
       return (profile, null);
     }
 
-    public async Task<(UserProfile Profile, string Error)> UpdateAsync(string persistentId, UpdateUserProfileRequest request)
+    public async Task<(UserProfile Profile, string Error)> UpdateAsync(string persistentId, string ownerUid, UpdateUserProfileRequest request)
     {
       var profileRef = _db.Collection("userProfiles").Document(persistentId);
       var profileSnap = await profileRef.GetSnapshotAsync();
@@ -100,6 +118,11 @@ namespace Backend.Services
         return (null, "Profile not found");
 
       var profile = profileSnap.ConvertTo<UserProfile>();
+      
+      // Ownership validation
+      if (profile.OwnerUid != ownerUid)
+        return (null, "You can only update your own profile");
+
       var timestamp = Timestamp.GetCurrentTimestamp();
       var updates = new Dictionary<string, object>
       {
