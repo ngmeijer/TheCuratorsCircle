@@ -1,21 +1,20 @@
-﻿import {Text, View, StyleSheet, Image, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
-import {FlashList} from '@shopify/flash-list';
-import {router, useFocusEffect} from "expo-router";
-import {DynamicDataButton} from "@/components/DynamicDataButton";
-import {StyledButton} from "@/components/StyledButton";
+﻿import {Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { router, useFocusEffect } from "expo-router";
+import { DynamicDataButton } from "@/components/DynamicDataButton";
+import { StyledButton } from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
 import CreateCollectionModal from "@/components/CreateCollectionModal";
+import EditProfileModal from "@/components/EditProfileModal";
 import Post from "@/components/Post";
-import React, {useEffect, useCallback} from "react";
-import {Colours} from "@/theme/colours";
-import { useState } from "react";
-import {getCollections, getPosts} from "@/api/databaseClient";
+import Ionicons from '@expo/vector-icons/Ionicons';
+import React, { useEffect, useCallback, useState } from "react";
+import { Colours } from "@/theme/colours";
+import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
-
-function handleEditProfile(){
-
-}
+import { UserProfileDto } from "@/DTOs/UserProfileDto";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const handlePostPress = (postId: string) => {
     console.log(`Navigating to post: ${postId}`);
@@ -23,6 +22,37 @@ const handlePostPress = (postId: string) => {
         pathname: "/postDetails",
         params: { id: postId}
     });
+}
+
+export function useUserProfile(alias?: string) {
+    const [profile, setProfile] = useState<UserProfileDto | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadProfile = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            let data;
+            if (alias) {
+                data = await getUserProfileByAlias(alias);
+            } else {
+                data = await getCurrentUserProfile();
+            }
+            setProfile(data);
+        } catch (err: any) {
+            console.error("Error loading profile:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [alias]);
+
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
+
+    return { profile, loading, error, refresh: loadProfile };
 }
 
 export function useProfilePosts() {
@@ -75,161 +105,78 @@ export function useProfileCollections() {
 
 export default function ProfilePage() {
     const { width } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
+    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile();
     const { posts, loadingPosts } = useProfilePosts();
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
+    
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    
+    useEffect(() => {
+        if (!loadingProfile && !profile) {
+            router.replace('/createProfile');
+        }
+    }, [loadingProfile, profile]);
+
+    if (loadingProfile || loadingPosts || loadingCollections) {
+        return <ActivityIndicator size="large" color="#fff" />;
+    }
+
+    if (!profile) {
+        return <ActivityIndicator size="large" color="#fff" />;
+    }
+
+    const handleEditProfile = () => {
+        setEditModalVisible(true);
+    };
 
     const createButtonWidth = (width - 24) / 2;
 
-    if (loadingPosts || loadingCollections) return <ActivityIndicator size="large" color="#fff" />;
-    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center' }}>No posts</Text>;
-
-    const renderHeader = () => (
-        <View>
-            <View style={styles.profileHeader}>
-                <Image
-                    source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
-                    style={styles.profilePicture}
-                />
-
-                <Text style={styles.fullName}>
-                    Jerry Meijer
-                </Text>
-                <Text style={styles.username}>@testerJerry</Text>
-                <Text style={styles.biography}>miauw miauw miauw.
-
-                    miau miauw, meow miaow miauw… miauw miauw.
-                    miauw miauw miauw miauw.
-
-                    meow miaow,
-                    miauw miau miauw.
-                    miauw… miauw..</Text>
-            </View>
-
-            <View style={styles.profileActions}>
-                <View style={styles.dataButtons}>
-                    <DynamicDataButton
-                        name="Collections"
-                        data="5"
-                        onPress={() => router.push("/collectionsPage")}
-                        buttonStyle={styles.button}
-                        nameTextStyle={styles.detailsNameButton}
-                        dataTextStyle={styles.detailsDataButton}
-                    />
-                    <DynamicDataButton
-                        name="Followers"
-                        data="5"
-                        onPress={() => router.push("/collectionsPage")}
-                        buttonStyle={styles.button}
-                        nameTextStyle={styles.detailsNameButton}
-                        dataTextStyle={styles.detailsDataButton}
-                    />
-                    <DynamicDataButton
-                        name="Following"
-                        data="5"
-                        onPress={() => router.push("/collectionsPage")}
-                        buttonStyle={styles.button}
-                        nameTextStyle={styles.detailsNameButton}
-                        dataTextStyle={styles.detailsDataButton}
-                    />
-                    </View>
-
-                <StyledButton
-                    style={styles.editProfileButton}
-                    title="Edit profile"
-                    onPress={handleEditProfile}
-                />
-            </View>
-
-            <View style={styles.profileContentTabs}>
-                <View style={styles.profileContentButtons}>
-                    <StyledButton
-                        title="Collections"
-                        onPress={() => setActiveTab("collections")}
-                        style={[
-                            styles.tabButton,
-                            activeTab === "collections" && styles.activeTabButton
-                        ]}
-                        textStyle={[
-                            styles.tabButtonText,
-                            activeTab === "collections" && styles.activeTabText
-                        ]}
-                    />
-
-                    <StyledButton
-                        title="Posts"
-                        onPress={() => setActiveTab("posts")}
-                        style={[
-                            styles.tabButton,
-                            activeTab === "posts" && styles.activeTabButton
-                        ]}
-                        textStyle={[
-                            styles.tabButtonText,
-                            activeTab === "posts" && styles.activeTabText
-                        ]}
-                    />
-                </View>
-            </View>
-        </View>
-    );
+    const currentUsername = profile?.usernamesHistory?.[0] || "@username";
+    const displayName = profile?.displayName || "Your Name";
+    const bio = profile?.bio || "No bio yet. Tap edit to add one!";
+    const collectionsCount = collections?.length || 0;
 
     return (
         <>
-            <ScrollView style={styles.container} stickyHeaderIndices={[1]}>
+            <ScrollView 
+                style={[styles.container, { paddingTop: insets.top }]} 
+                stickyHeaderIndices={[1]}
+                contentInsetAdjustmentBehavior="never"
+            >
             <View style={styles.profileHeader}>
-                <Image
-                    source={require('../assets/images/IMG-20251121-WA0007.jpeg')}
-                    style={styles.profilePicture}
-                />
-
-                <Text style={styles.fullName}>
-                    Jerry Meijer
-                </Text>
-                <Text style={styles.username}>@testerJerry</Text>
-                <Text style={styles.biography}>miauw miauw miauw.
-
-                    miau miauw, meow miaow miauw… miauw miauw.
-                    miauw miauw miauw miauw.
-
-                    meow miaow,
-                    miauw miau miauw.
-                    miauw… miauw..</Text>
-            </View>
-
-            <View style={styles.profileActions}>
-                <View style={styles.dataButtons}>
-                    <DynamicDataButton
-                        name="Collections"
-                        data="5"
-                        onPress={() => router.push("/collectionsPage")}
-                        buttonStyle={styles.button}
-                        nameTextStyle={styles.detailsNameButton}
-                        dataTextStyle={styles.detailsDataButton}
-                    />
-                    <DynamicDataButton
-                        name="Followers"
-                        data="5"
-                        onPress={() => router.push("/collectionsPage")}
-                        buttonStyle={styles.button}
-                        nameTextStyle={styles.detailsNameButton}
-                        dataTextStyle={styles.detailsDataButton}
-                    />
-                    <DynamicDataButton
-                        name="Following"
-                        data="5"
-                        onPress={() => router.push("/collectionsPage")}
-                        buttonStyle={styles.button}
-                        nameTextStyle={styles.detailsNameButton}
-                        dataTextStyle={styles.detailsDataButton}
-                    />
+                <View style={styles.profileLeftSection}>
+                    <Text style={styles.fullName}>
+                        {displayName}
+                    </Text>
+                    <Text style={styles.username}>{currentUsername}</Text>
+                    <Text style={styles.biography}>{bio}</Text>
+                </View>
+                
+                <View style={styles.profileRightSection}>
+                    <View style={styles.profilePicturePlaceholder}>
+                        <Ionicons name="person" size={40} color="#666" />
                     </View>
-
-                <StyledButton
-                    style={styles.editProfileButton}
-                    title="Edit profile"
-                    onPress={handleEditProfile}
-                />
+                    <Pressable style={styles.editButton} onPress={handleEditProfile}>
+                        <Ionicons name="pencil" size={18} color="#fff" />
+                    </Pressable>
+                    <View style={styles.statsColumn}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statData}>{collectionsCount}</Text>
+                            <Text style={styles.statName}>Collections</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statData}>0</Text>
+                            <Text style={styles.statName}>Followers</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statData}>0</Text>
+                            <Text style={styles.statName}>Following</Text>
+                        </View>
+                    </View>
+                </View>
             </View>
 
             <View style={styles.profileContentTabs}>
@@ -282,12 +229,12 @@ export default function ProfilePage() {
                                     item={item} 
                                 />
                             );
-                        }}
-                        masonry
-                        numColumns={2}
-                        keyExtractor={(item: any) => item.id}
-                        contentContainerStyle={styles.listContent}
-                    />
+                }}
+                masonry
+                numColumns={2}
+                keyExtractor={(item: any) => item.id}
+                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+            />
                 </View>
             ) : (
                 <View style={styles.collectionsGrid}>
@@ -309,6 +256,15 @@ export default function ProfilePage() {
                 refreshCollections();
             }}
         />
+        <EditProfileModal 
+            visible={editModalVisible}
+            profile={profile}
+            onClose={() => setEditModalVisible(false)}
+            onSuccess={() => {
+                setEditModalVisible(false);
+                refreshProfile();
+            }}
+        />
         </>
     );
 }
@@ -316,48 +272,101 @@ export default function ProfilePage() {
 const styles = StyleSheet.create({
     container: {
         flex:1,
-        backgroundColor: '#121417',
-    },
-    scrollView: {
-        flex:1,
+        backgroundColor: '#0d0f12',
     },
     profileHeader: {
-        paddingTop: 20,
-        paddingBottom: 16,
+        paddingTop: 8,
+        paddingBottom: 0,
         width: '100%',
-        backgroundColor: '#121417',
+        backgroundColor: '#1a1d23',
+        flexDirection: 'row',
         alignItems: 'center',
+        flexWrap: 'wrap',
     },
-    profilePicture:{
-      width:80, height:80,
-        borderRadius: 30,
+    profileLeftSection: {
+        width: '70%',
+        paddingRight: 12,
+        paddingLeft: 16,
+        paddingTop: 28,
+        justifyContent: 'center',
+        backgroundColor: '#1a1d23',
+    },
+    profileRightSection: {
+        width: '30%',
+        alignItems: "center",
+        paddingRight: 24,
+        paddingTop: 30,
+    },
+    statsColumn: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    statItem: {
+        alignItems: 'center',
+        marginVertical: 2,
+    },
+    statData: {
+        color: Colours.textPrimary,
+        fontSize: 20,
+        fontFamily: "LeagueSpartan_600SemiBold",
+    },
+    statName: {
+        color: '#888',
+        fontSize: 12,
+    },
+    profilePicture: {
+        width: 70,
+        height: 70,
+        borderRadius: 25,
+        marginBottom: 8,
+    },
+    profilePicturePlaceholder: {
+        width: 70,
+        height: 70,
+        borderRadius: 25,
+        marginBottom: 8,
+        backgroundColor: '#2A2E35',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     fullName: {
         color: Colours.textPrimary,
         fontFamily: "LeagueSpartan_600SemiBold",
-        fontSize: 24
+        fontSize: 24,
+        marginTop: -20,
     },
     username: {
-      fontSize: 20,
+        fontSize: 20,
         color: '#FFB454',
         fontFamily: "LeagueSpartan_600SemiBold",
     },
     biography: {
-        color: 'red',
+        color: '#fff',
         fontFamily: "Inter_400Regular",
-        textAlign: 'center',
-        width: 250,
-        marginVertical:5,
+        textAlign: 'left',
+        backgroundColor: '#2A2E35',
+        padding: 4,
+        borderRadius: 8,
+        marginTop: 8,
+        minHeight: 140,
     },
-    profileActions: {
-        backgroundColor:"#121417",
+    editButtonContainer: {
         width: '100%',
-        flexDirection: 'column',
         alignItems: 'center',
+        paddingVertical: 4,
+        backgroundColor: '#121417',
+    },
+    editButton: {
+        position: 'absolute',
+        top: 50,
+        right: 2,
+        backgroundColor: '#7C6DFF',
+        padding: 8,
+        borderRadius: 20,
     },
     profileContentTabs: {
-        backgroundColor: '#181B20',
         width: '100%',
+        backgroundColor:"#1a1d23",
     },
     collectionsGrid: {
         flex: 1,
@@ -376,13 +385,6 @@ const styles = StyleSheet.create({
         flex: 1,
         minHeight: 300,
     },
-    posts: {
-        flex: 1,
-    },
-    tabText: {
-        color: "#AAA",
-    },
-
     activeTabButton: {
         backgroundColor: "#FFB454",
     },
@@ -396,51 +398,28 @@ const styles = StyleSheet.create({
     tabButtonText: {
         color: "#AAA",
     },
-    text: {
-        color: '#fff'
-    },
-    button: {
-        alignItems: 'center',
-        textAlign: "auto",
-        justifyContent: "center",
-        width:75,
-        height:50,
-        marginVertical: 5,
-        marginHorizontal: 15,
-        borderRadius: 10
-    },
-    dataButtons: {
-        flexDirection:"row"
-    },
-    detailsNameButton: {
-        color: '#fff',
-        fontSize:12
-    },
-    detailsDataButton: {
-        color: '#fff',
-        fontSize: 20,
-        fontFamily:''
-    },
-    editProfileButton: {
-        width: 200,
-        backgroundColor: '#7C6DFF',
-        color:'red',
-        marginVertical:10,
-    },
-    profileContentButtons:{
-        flexDirection:"row",
-        justifyContent:"space-around",
-        marginVertical:10,
-    },
-    showCollectionsButton: {
-
-    },
-    showPostsButton: {
-
+    profileContentButtons: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        marginVertical: 4,
     },
     createCollectionText: {
         color: '#888',
         fontSize: 40,
         fontWeight: '300',
+    },
+    editProfileButton: {
+        width: '95%',
+        backgroundColor: '#7C6DFF',
+        marginVertical: 10,
+        alignSelf: 'center',
+    },
+    placeholderProfilePicture: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#2A2E35',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
