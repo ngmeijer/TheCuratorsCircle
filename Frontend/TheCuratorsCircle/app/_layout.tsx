@@ -20,6 +20,7 @@ export default function RootLayout() {
     return (
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
+            <Stack.Screen name="createProfile" />
             <Stack.Screen name="profile" />
             <Stack.Screen name="postDetails" />
             <Stack.Screen name="createPost" />

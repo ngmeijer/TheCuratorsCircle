@@ -8,6 +8,7 @@ using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using TheCuratorsCircle.Authentication;
 using TheCuratorsCircle.Models;
 using TheCuratorsCircle.Utilities;
@@ -19,10 +20,13 @@ namespace TheCuratorsCircle.Controllers;
 public class AuthenticationController : ControllerBase
 {
     private readonly FirebaseAuth _auth;
+    private readonly string _firebaseWebApiKey;
 
-    public AuthenticationController()
+    public AuthenticationController(IConfiguration configuration)
     {
         _auth = FirebaseAuth.DefaultInstance;
+        _firebaseWebApiKey = configuration["Firebase:WebApiKey"] 
+            ?? throw new InvalidOperationException("Firebase:WebApiKey not configured");
     }
 
     [HttpPost("login")]
@@ -99,7 +103,7 @@ public class AuthenticationController : ControllerBase
         };
 
         var response = await client.PostAsJsonAsync(
-            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBwcToSEZCqHamHdGZx_gcXlQmXtzXDRDk",
+            $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={_firebaseWebApiKey}",
             payload);
 
         if (!response.IsSuccessStatusCode)

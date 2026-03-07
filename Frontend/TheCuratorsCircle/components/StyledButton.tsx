@@ -6,12 +6,13 @@ interface StyledButtonProps {
     onPress: (event: GestureResponderEvent) => void;
     style?: StyleProp<ViewStyle>;
     textStyle?: StyleProp<TextStyle>;
+    disabled?: boolean;
 }
 
 export
-function StyledButton({ title, onPress, style, textStyle }: StyledButtonProps) {
+function StyledButton({ title, onPress, style, textStyle, disabled }: StyledButtonProps) {
     return (
-        <Pressable style={[styles.button, style]} onPress={onPress}>
+        <Pressable style={[styles.button, style, disabled && styles.buttonDisabled]} onPress={onPress} disabled={disabled}>
             <Text style={[styles.buttonText, textStyle]}>{title}</Text>
         </Pressable>
     );
@@ -24,6 +25,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: 10,
         alignItems: 'center',
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
     buttonText: {
         color: '#fff',

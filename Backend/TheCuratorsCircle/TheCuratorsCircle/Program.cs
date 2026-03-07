@@ -14,6 +14,13 @@ using Backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", @"./firebase_creds.json");
+
+if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FIREBASE_WEB_API_KEY")))
+{
+    throw new InvalidOperationException("FIREBASE_WEB_API_KEY environment variable is not set");
+}
+
+builder.Configuration["Firebase:WebApiKey"] = Environment.GetEnvironmentVariable("FIREBASE_WEB_API_KEY");
 builder.Services.AddSingleton(FirebaseApp.Create());
 builder.Services.AddSingleton(FirebaseAuth.DefaultInstance);
 builder.Services.AddSingleton(FirestoreDb.Create("the-curator-s-circle"));

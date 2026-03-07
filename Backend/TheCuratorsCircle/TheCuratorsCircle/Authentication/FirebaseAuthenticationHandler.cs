@@ -25,19 +25,22 @@ public class FirebaseAuthenticationHandler : AuthenticationHandler<Authenticatio
         // 1. Check for Authorization Header
         if (!Request.Headers.ContainsKey("Authorization"))
         {
-            return AuthenticateResult.Fail("Missing Authorization Header");
+            Logger.LogDebug("Missing Authorization Header - allowing anonymous request");
+            return AuthenticateResult.NoResult();
         }
 
         // 2. Extract Token
         string authorizationHeader = Request.Headers["Authorization"]!;
         if (!authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
+            Logger.LogDebug("Invalid Authorization Scheme");
             return AuthenticateResult.Fail("Invalid Authorization Scheme");
         }
 
         string idToken = authorizationHeader.Substring("Bearer ".Length).Trim();
         if (string.IsNullOrEmpty(idToken))
         {
+            Logger.LogDebug("Missing Token");
             return AuthenticateResult.Fail("Missing Token");
         }
 
@@ -68,8 +71,7 @@ public class FirebaseAuthenticationHandler : AuthenticationHandler<Authenticatio
         }
         catch (Exception ex)
         {
-            // Log the error (e.g., token expired, invalid signature, network failure)
-            Logger.LogError(ex, "Firebase token validation failed.");
+            Logger.LogDebug(ex, "Firebase token validation failed: {Message}", ex.Message);
             return AuthenticateResult.Fail("Invalid Firebase Token");
         }
     }

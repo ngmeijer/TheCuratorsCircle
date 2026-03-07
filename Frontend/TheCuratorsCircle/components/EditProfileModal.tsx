@@ -34,7 +34,8 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
     useEffect(() => {
         if (visible) {
             if (profile) {
-                setUsername(profile.usernamesHistory?.[0] || '');
+                const existingUsername = profile.usernamesHistory?.[0] || '';
+                setUsername(existingUsername.startsWith('@') ? existingUsername.substring(1) : existingUsername);
                 setDisplayName(profile.displayName || '');
                 setBio(profile.bio || '');
             } else {
@@ -52,23 +53,20 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
             return;
         }
 
-        if (!username.startsWith('@')) {
-            setError('Username must start with @');
-            return;
-        }
+        const finalUsername = '@' + username.trim();
 
         setLoading(true);
         setError('');
         try {
             if (isCreateMode) {
                 await createUserProfile({
-                    username: username.trim(),
+                    username: finalUsername,
                     displayName: displayName.trim(),
                     bio: bio.trim(),
                 });
             } else {
                 const payload: UpdateUserProfilePayload = {
-                    username: username.trim(),
+                    username: finalUsername,
                     displayName: displayName.trim(),
                     bio: bio.trim(),
                 };
@@ -111,18 +109,22 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
 
                     <ScrollView style={styles.content}>
                         <Text style={styles.label}>Username</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="@username"
-                            placeholderTextColor="#666"
-                            value={username}
-                            onChangeText={(text) => {
-                                setUsername(text);
-                                setError('');
-                            }}
-                            maxLength={30}
-                            autoCapitalize="none"
-                        />
+                        <View style={styles.usernameInputContainer}>
+                            <Text style={styles.usernamePrefix}>@</Text>
+                            <TextInput
+                                style={styles.usernameInput}
+                                placeholder="username"
+                                placeholderTextColor="#666"
+                                value={username}
+                                onChangeText={(text) => {
+                                    const cleaned = text.replace('@', '');
+                                    setUsername(cleaned);
+                                    setError('');
+                                }}
+                                maxLength={29}
+                                autoCapitalize="none"
+                            />
+                        </View>
 
                         <Text style={styles.label}>Display Name</Text>
                         <TextInput
@@ -222,6 +224,25 @@ const styles = StyleSheet.create({
         fontSize: 16,
         borderWidth: 1,
         borderColor: '#333',
+    },
+    usernameInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#2a2a2a',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    usernamePrefix: {
+        color: '#666',
+        fontSize: 16,
+        paddingLeft: 12,
+    },
+    usernameInput: {
+        flex: 1,
+        padding: 12,
+        color: '#fff',
+        fontSize: 16,
     },
     bioInput: {
         height: 100,

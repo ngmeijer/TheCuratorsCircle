@@ -4,7 +4,33 @@ import Post from '../components/Post';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
 import {PostDto} from "@/DTOs/PostDto";
-import {getPosts} from "@/api/databaseClient";
+import {getPosts, getCurrentUserProfile} from "@/api/databaseClient";
+import {UserProfileDto} from "@/DTOs/UserProfileDto";
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+export function useCurrentUserProfile() {
+    const [profile, setProfile] = useState<UserProfileDto | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    const loadProfile = useCallback(async () => {
+        setLoading(true);
+        try {
+            const profile = await getCurrentUserProfile();
+            setProfile(profile);
+        } catch (err) {
+            console.error(err);
+            setProfile(null);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
+
+    return { profile, loading, refresh: loadProfile };
+}
 
 export function useProfilePosts() {
     const [posts, setPosts] = useState<PostDto[]>([]);
@@ -40,9 +66,24 @@ function onPressPost() {
 }
 
 export default function ForYouPage() {
+    const insets = useSafeAreaInsets();
+    const { profile, loading: loadingProfile, refresh: refreshProfile } = useCurrentUserProfile();
     const { posts, loadingPosts, refreshing, onRefresh } = useProfilePosts();
 
-    if (loadingPosts) return <ActivityIndicator size="large" color="#fff" />;
+    useEffect(() => {
+        if (!loadingProfile && !profile) {
+            router.replace('/createProfile');
+        }
+    }, [loadingProfile, profile]);
+
+    if (loadingProfile || loadingPosts) {
+        return <ActivityIndicator size="large" color="#fff" />;
+    }
+
+    if (!profile) {
+        return <ActivityIndicator size="large" color="#fff" />;
+    }
+
     if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center', marginTop: 50 }}>No posts</Text>;
 
     return (
