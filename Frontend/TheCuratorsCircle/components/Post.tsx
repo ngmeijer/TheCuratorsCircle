@@ -15,6 +15,8 @@ export default function Post({ item, username, compact = false, onPress }: PostP
     const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const itemWidth = (width - 24) / 2;
+
     useEffect(() => {
         async function fetchMedia() {
             try {
@@ -30,8 +32,9 @@ export default function Post({ item, username, compact = false, onPress }: PostP
     }, [item.mediaId, item.mediaType]);
 
     if (loading) {
+        const loadingWidth = compact ? itemWidth - 4 : undefined;
         return (
-            <View style={styles.container}>
+            <View style={[compact ? styles.containerCompact : styles.container, loadingWidth ? { width: loadingWidth } : {}]}>
                 <ActivityIndicator size="large" color="#fff" />
             </View>
         );
@@ -42,33 +45,38 @@ export default function Post({ item, username, compact = false, onPress }: PostP
             onPress={onPress}
             style={({ pressed }) => [
                 compact ? styles.containerCompact : styles.container,
+                compact ? { width: itemWidth - 4 } : {},
                 { opacity: pressed ? 0.8 : 1 }
             ]}
         >
-            <View style={compact ? styles.imageWrapperCompact : styles.imageWrapper}>
+            <View style={compact ? [styles.imageWrapperCompact, { width: itemWidth - 8 }] : styles.imageWrapper}>
                 {media?.posterUrl ? (
                     <Image
                         source={{ uri: media.posterUrl }}
-                        style={styles.image}
+                        style={compact ? styles.imageCompact : styles.image}
                     />
                 ) : (
-                    <View style={styles.placeholder}>
+                    <View style={compact ? styles.placeholderCompact : styles.placeholder}>
                         <Text style={styles.placeholderText}>{media?.title || item.mediaType}</Text>
                     </View>
                 )}
-                <View style={styles.overlay}>
-                    <Text style={styles.title}>{item.title}</Text>
-                    {item.caption && (
-                        <Text style={styles.caption} numberOfLines={2}>{item.caption}</Text>
-                    )}
-                </View>
+                {!compact && (
+                    <View style={styles.overlay}>
+                        <Text style={styles.title}>{item.title}</Text>
+                        {item.caption && (
+                            <Text style={styles.caption} numberOfLines={2}>{item.caption}</Text>
+                        )}
+                    </View>
+                )}
             </View>
             
-            <View style={styles.footer}>
-                {username && <Text style={styles.username}>{username}</Text>}
-                <Text style={styles.mediaType}>{item.mediaType}</Text>
-                <Text style={styles.likeCount}>{item.likeCount} likes</Text>
-            </View>
+            {!compact && (
+                <View style={styles.footer}>
+                    {username && <Text style={styles.username}>{username}</Text>}
+                    <Text style={styles.mediaType}>{item.mediaType}</Text>
+                    <Text style={styles.likeCount}>{item.likeCount} likes</Text>
+                </View>
+            )}
         </Pressable>
     );
 }
@@ -143,25 +151,26 @@ const styles = StyleSheet.create({
     },
     containerCompact: {
         backgroundColor: '#1e293b',
-        borderRadius: 8,
+        borderRadius: 12,
         overflow: 'hidden',
-        marginBottom: 8,
-        width: '100%',
+        margin: 4,
     },
     imageWrapperCompact: {
         position: 'relative',
-        aspectRatio: 1,
-        width: '100%',
-        height: 150,
+        aspectRatio: 2/3,
+        borderRadius: 12,
+        overflow: 'hidden',
     },
-    image: {
+    imageCompact: {
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
     },
-    imageWrapperCompact: {
-        position: 'relative',
-        aspectRatio: 1,
+    placeholderCompact: {
         width: '100%',
+        height: '100%',
+        backgroundColor: '#2d3a4f',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
