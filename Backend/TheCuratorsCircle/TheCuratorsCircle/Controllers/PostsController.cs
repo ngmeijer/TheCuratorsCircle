@@ -1,7 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Google.Cloud.Firestore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TheCuratorsCircle.Clients;
 using TheCuratorsCircle.Models.Content;
+using Backend.Services;
+using Backend.Models.Profiles;
 
 namespace TheCuratorsCircle.Controllers;
 
@@ -11,14 +19,28 @@ public class PostsController : ControllerBase
 {
     private readonly FirestoreClient _firestore;
     private readonly ILogger<PostsController> _logger;
+    private readonly IUserProfileService _profileService;
+    private readonly IFollowService _followService;
 
-    public PostsController(FirestoreClient firestore, ILogger<PostsController> logger)
+    public PostsController(
+        FirestoreClient firestore, 
+        ILogger<PostsController> logger,
+        IUserProfileService profileService,
+        IFollowService followService)
     {
         _firestore = firestore;
         _logger = logger;
+        _profileService = profileService;
+        _followService = followService;
+    }
+
+    private string GetCurrentUserId()
+    {
+        return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
     {
         _logger.LogInformation("CreatePost request received - MediaType: {MediaType}, MediaId: {MediaId}, CollectionId: {CollectionId}", request.MediaType, request.MediaId, request.CollectionId);
@@ -29,7 +51,13 @@ public class PostsController : ControllerBase
             return BadRequest(new { message = "Invalid data. Title, mediaType, mediaId, and collectionId are required." });
         }
 
-        var userId = "test-user-id";
+        var firebaseUid = GetCurrentUserId();
+        var profile = await _profileService.GetByOwnerUidAsync(firebaseUid);
+        
+        if (profile == null)
+            return Unauthorized(new { error = "Profile not found" });
+
+        var userId = profile.PersistentId;
 
         var post = new Post
         {
@@ -95,6 +123,68 @@ public class PostsController : ControllerBase
         return Ok(posts);
     }
 
+    [HttpGet("feed")]
+    [Authorize]
+    public async Task<IActionResult> GetFeed()
+    {
+        try
+        {
+            _logger.LogInformation("GetFeed request received");
+            
+            var firebaseUid = GetCurrentUserId();
+            var currentProfile = await _profileService.GetByOwnerUidAsync(firebaseUid);
+            
+            if (currentProfile == null)
+                return Unauthorized(new { error = "Profile not found" });
+
+            var following = await _followService.GetFollowingAsync(currentProfile.PersistentId);
+            
+            if (following.Count == 0)
+            {
+                return Ok(new List<PostWithProfile>());
+            }
+
+            var followingIds = following.Select(p => p.PersistentId).ToList();
+
+            // Fetch posts from followed users (requires composite index: userId + createdAt DESC)
+            var query = _firestore.Database.Collection("posts")
+                .WhereIn("userId", followingIds)
+                .OrderByDescending("createdAt")
+                .Limit(100);
+
+            var snapshot = await query.GetSnapshotAsync();
+            var posts = snapshot.Documents.Select(doc => doc.ConvertTo<Post>()).ToList();
+
+            // Batch fetch all relevant profiles
+            var userIds = posts.Select(p => p.UserId).Distinct().ToList();
+            var profilesDict = new Dictionary<string, UserProfile>();
+
+            foreach (var userId in userIds)
+            {
+                var profileDoc = await _firestore.Database.Collection("userProfiles").Document(userId).GetSnapshotAsync();
+                if (profileDoc.Exists)
+                {
+                    var profile = profileDoc.ConvertTo<UserProfile>();
+                    profilesDict[userId] = profile;
+                }
+            }
+
+            // Join posts with profiles
+            var postsWithProfiles = posts.Select(post => new PostWithProfile
+            {
+                Post = post,
+                Profile = profilesDict.GetValueOrDefault(post.UserId)
+            }).ToList();
+
+            return Ok(postsWithProfiles);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetFeed");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
     [HttpGet("{postId}")]
     public async Task<IActionResult> GetPost(string postId)
     {
@@ -112,4 +202,10 @@ public class PostsController : ControllerBase
         var post = doc.ConvertTo<Post>();
         return Ok(post);
     }
+}
+
+public class PostWithProfile
+{
+    public Post Post { get; set; }
+    public UserProfile Profile { get; set; }
 }
