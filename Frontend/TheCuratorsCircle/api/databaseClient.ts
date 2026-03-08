@@ -371,3 +371,143 @@ export async function updateUserProfile(persistentId: string, payload: UpdateUse
     console.log("User profile updated:", receivedData);
     return receivedData;
 }
+
+export async function followUser(targetUserId: string): Promise<any> {
+    console.log("Following user:", targetUserId);
+    const response = await fetch(`http://${ipadress}:5044/follows`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ targetUserId })
+    });
+
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || `Error ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export async function unfollowUser(targetUserId: string): Promise<any> {
+    console.log("Unfollowing user:", targetUserId);
+    const response = await fetch(`http://${ipadress}:5044/follows/${targetUserId}`, {
+        method: "DELETE",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || `Error ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export async function getFollowingList(): Promise<any[]> {
+    console.log("Getting following list");
+    const response = await fetch(`http://${ipadress}:5044/follows/me/following`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) return [];
+        throw new Error(`Error ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export async function getFollowersList(): Promise<any[]> {
+    console.log("Getting followers list");
+    const response = await fetch(`http://${ipadress}:5044/follows/me/followers`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) return [];
+        throw new Error(`Error ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export async function getIsFollowing(userId: string): Promise<boolean> {
+    console.log("Checking if following:", userId);
+    const response = await fetch(`http://${ipadress}:5044/follows/${userId}/is-following`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        return false;
+    }
+
+    const data = await response.json();
+    return data.isFollowing;
+}
+
+export async function getFollowingCount(userId: string): Promise<number> {
+    const response = await fetch(`http://${ipadress}:5044/follows/${userId}/following-count`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return data.count;
+}
+
+export async function getFollowersCount(userId: string): Promise<number> {
+    const response = await fetch(`http://${ipadress}:5044/follows/${userId}/followers-count`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return data.count;
+}
+
+export async function getFeed(): Promise<any[]> {
+    console.log("Getting feed from backend");
+    const response = await fetch(`http://${ipadress}:5044/posts/feed`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            return [];
+        }
+        let errorMessage = `Error ${response.status}`;
+        try {
+            const errorData = await response.json();
+            console.error("Feed error response:", errorData);
+            errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch {
+            const errorText = await response.text();
+            console.error("Feed error text:", errorText);
+            errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+    }
+
+    return response.json();
+}
+
+export async function searchUsers(query: string): Promise<any[]> {
+    if (!query || query.length < 2) return [];
+    
+    const response = await fetch(`http://${ipadress}:5044/userprofiles/search?q=${encodeURIComponent(query)}`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        return [];
+    }
+
+    return response.json();
+}

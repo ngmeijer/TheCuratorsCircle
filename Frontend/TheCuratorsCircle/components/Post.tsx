@@ -5,10 +5,11 @@ import { getMediaById, MediaSearchResult } from '@/api/databaseClient';
 
 interface PostProps {
     item: PostDto;
+    username?: string;
     onPress?: () => void;
 }
 
-export default function Post({ item, onPress }: PostProps) {
+export default function Post({ item, username, onPress }: PostProps) {
     const { width } = useWindowDimensions();
     const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [loading, setLoading] = useState(true);
@@ -63,6 +64,7 @@ export default function Post({ item, onPress }: PostProps) {
             </View>
             
             <View style={styles.footer}>
+                {username && <Text style={styles.username}>{username}</Text>}
                 <Text style={styles.mediaType}>{item.mediaType}</Text>
                 <Text style={styles.likeCount}>{item.likeCount} likes</Text>
             </View>
@@ -124,6 +126,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 12,
+    },
+    username: {
+        color: '#9ca3af',
+        fontSize: 12,
     },
     mediaType: {
         color: '#3b82f6',

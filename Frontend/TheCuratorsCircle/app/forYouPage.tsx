@@ -3,8 +3,8 @@ import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator, RefreshC
 import Post from '../components/Post';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
-import {PostDto} from "@/DTOs/PostDto";
-import {getPosts, getCurrentUserProfile} from "@/api/databaseClient";
+import {PostDto, PostWithProfileDto} from "@/DTOs/PostDto";
+import {getFeed, getCurrentUserProfile} from "@/api/databaseClient";
 import {UserProfileDto} from "@/DTOs/UserProfileDto";
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -33,13 +33,13 @@ export function useCurrentUserProfile() {
 }
 
 export function useProfilePosts() {
-    const [posts, setPosts] = useState<PostDto[]>([]);
+    const [posts, setPosts] = useState<PostWithProfileDto[]>([]);
     const [loadingPosts, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const loadPosts = useCallback(async () => {
         try {
-            const posts = await getPosts();
+            const posts = await getFeed();
             setPosts(posts);
         } catch (err) {
             console.error(err);
@@ -84,41 +84,48 @@ export default function ForYouPage() {
         return <ActivityIndicator size="large" color="#fff" />;
     }
 
-    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center', marginTop: 50 }}>No posts</Text>;
-
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.logo}>For You</Text>
             </View>
 
-            <FlatList
-                key="posts"
-                data={posts}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                renderItem={({ item }) => (
-                    <Post
-                        item={item}
-                        onPress={() =>
-                            router.push({
-                                pathname:"/postDetails",
-                                params: {id: item.id},
-                            })
-                        }
-                    />
-                )}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor="#fff"
-                    />
-                }
-            />
+            {!posts.length ? (
+                <View style={styles.emptyFeed}>
+                    <Text style={styles.emptyText}>No posts yet</Text>
+                    <Text style={styles.emptySubtext}>Follow people to see their posts here</Text>
+                </View>
+            ) : (
+                <FlatList
+                    key="posts"
+                    data={posts}
+                    keyExtractor={(item) => item.post.id}
+                    contentContainerStyle={styles.listContent}
+                    renderItem={({ item }) => (
+                        <Post
+                            item={item.post}
+                            username={item.profile?.usernamesHistory?.[0] || '@unknown'}
+                            onPress={() =>
+                                router.push({
+                                    pathname:"/postDetails",
+                                    params: {id: item.post.id},
+                                })
+                            }
+                        />
+                    )}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor="#fff"
+                        />
+                    }
+                />
+            )}
+
             <View style={styles.quickAccessMenu}>
-                <Pressable style={styles.button} onPress={() => console.log('Google')}>
-                    <Ionicons name="albums" size={28} />
+                <Pressable style={styles.button} onPress={() => router.push('/search')}>
+                    <Ionicons name="search" size={28} />
                 </Pressable>
 
                 <Pressable style={styles.button} onPress={() => router.push('/createPost')}>
@@ -174,5 +181,23 @@ const styles = StyleSheet.create({
         padding: 4,
         marginVertical: 2,
         alignItems: 'center',
+    },
+    emptyFeed: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: 100,
+    },
+    emptyText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    emptySubtext: {
+        color: '#888',
+        fontSize: 14,
+        marginTop: 8,
+        textAlign: 'center',
+        paddingHorizontal: 40,
     },
 });
