@@ -471,11 +471,13 @@ export async function getFollowersCount(userId: string): Promise<number> {
 }
 
 export async function getFeed(): Promise<any[]> {
-    console.log("Getting feed from backend");
+    console.log("[API] Getting feed from backend");
     const response = await fetch(`http://${ipadress}:5044/posts/feed`, {
         method: "GET",
         headers: getHeaders()
     });
+
+    console.log("[API] Feed response status:", response.status);
 
     if (!response.ok) {
         if (response.status === 401) {
@@ -484,17 +486,19 @@ export async function getFeed(): Promise<any[]> {
         let errorMessage = `Error ${response.status}`;
         try {
             const errorData = await response.json();
-            console.error("Feed error response:", errorData);
+            console.error("[API] Feed error response:", errorData);
             errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
         } catch {
             const errorText = await response.text();
-            console.error("Feed error text:", errorText);
+            console.error("[API] Feed error text:", errorText);
             errorMessage = errorText || errorMessage;
         }
         throw new Error(errorMessage);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log("[API] Feed data received:", data.length, "posts");
+    return data;
 }
 
 export async function searchUsers(query: string): Promise<any[]> {

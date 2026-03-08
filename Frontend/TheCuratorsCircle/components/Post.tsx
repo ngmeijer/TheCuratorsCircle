@@ -6,10 +6,11 @@ import { getMediaById, MediaSearchResult } from '@/api/databaseClient';
 interface PostProps {
     item: PostDto;
     username?: string;
+    compact?: boolean;
     onPress?: () => void;
 }
 
-export default function Post({ item, username, onPress }: PostProps) {
+export default function Post({ item, username, compact = false, onPress }: PostProps) {
     const { width } = useWindowDimensions();
     const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [loading, setLoading] = useState(true);
@@ -40,11 +41,11 @@ export default function Post({ item, username, onPress }: PostProps) {
         <Pressable
             onPress={onPress}
             style={({ pressed }) => [
-                styles.container,
-                { width: width - 32, opacity: pressed ? 0.8 : 1 }
+                compact ? styles.containerCompact : styles.container,
+                { opacity: pressed ? 0.8 : 1 }
             ]}
         >
-            <View style={styles.imageWrapper}>
+            <View style={compact ? styles.imageWrapperCompact : styles.imageWrapper}>
                 {media?.posterUrl ? (
                     <Image
                         source={{ uri: media.posterUrl }}
@@ -139,5 +140,28 @@ const styles = StyleSheet.create({
     likeCount: {
         color: '#888',
         fontSize: 12,
+    },
+    containerCompact: {
+        backgroundColor: '#1e293b',
+        borderRadius: 8,
+        overflow: 'hidden',
+        marginBottom: 8,
+        width: '100%',
+    },
+    imageWrapperCompact: {
+        position: 'relative',
+        aspectRatio: 1,
+        width: '100%',
+        height: 150,
+    },
+    image: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    imageWrapperCompact: {
+        position: 'relative',
+        aspectRatio: 1,
+        width: '100%',
     },
 });

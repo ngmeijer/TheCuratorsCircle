@@ -1,9 +1,10 @@
 import React, {useEffect, useState, useCallback} from 'react';
-import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator, RefreshControl} from 'react-native';
+import {View, StyleSheet, Text, Pressable, ActivityIndicator, RefreshControl} from 'react-native';
+import { FlashList } from "@shopify/flash-list";
 import Post from '../components/Post';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
-import {PostDto, PostWithProfileDto} from "@/DTOs/PostDto";
+import {PostWithProfileDto} from "@/DTOs/PostDto";
 import {getFeed, getCurrentUserProfile} from "@/api/databaseClient";
 import {UserProfileDto} from "@/DTOs/UserProfileDto";
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -38,13 +39,16 @@ export function useProfilePosts() {
     const [refreshing, setRefreshing] = useState(false);
 
     const loadPosts = useCallback(async () => {
+        console.log('[Feed] Loading posts...');
         try {
             const posts = await getFeed();
+            console.log('[Feed] Posts loaded:', posts.length);
             setPosts(posts);
-        } catch (err) {
-            console.error(err);
+        } catch (err: any) {
+            console.error('[Feed] Error loading posts:', err.message || err);
         } finally {
             setLoading(false);
+            console.log('[Feed] Loading complete');
         }
     }, []);
 
@@ -84,6 +88,8 @@ export default function ForYouPage() {
         return <ActivityIndicator size="large" color="#fff" />;
     }
 
+    console.log('[ForYouPage] Rendering - posts:', posts.length, 'loadingPosts:', loadingPosts);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -96,31 +102,40 @@ export default function ForYouPage() {
                     <Text style={styles.emptySubtext}>Follow people to see their posts here</Text>
                 </View>
             ) : (
-                <FlatList
-                    key="posts"
-                    data={posts}
-                    keyExtractor={(item) => item.post.id}
-                    contentContainerStyle={styles.listContent}
-                    renderItem={({ item }) => (
-                        <Post
-                            item={item.post}
-                            username={item.profile?.usernamesHistory?.[0] || '@unknown'}
-                            onPress={() =>
-                                router.push({
-                                    pathname:"/postDetails",
-                                    params: {id: item.post.id},
-                                })
-                            }
-                        />
-                    )}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor="#fff"
-                        />
-                    }
-                />
+                <View style={{ flex: 1 }}>
+                    <FlashList
+                        data={posts}
+                        numColumns={2}
+                        masonry
+                        estimatedItemSize={200}
+                        renderItem={({ item }: { item: PostWithProfileDto }) => {
+                            console.log('[ForYouPage] Rendering item:', item.post.id);
+                            return (
+                                <Post
+                                    item={item.post}
+                                    username={item.profile?.usernamesHistory?.[0] || '@unknown'}
+                                    compact={true}
+                                    onPress={() =>
+                                        router.push({
+                                            pathname:"/postDetails",
+                                            params: {id: item.post.id},
+                                        })
+                                    }
+                                />
+                            );
+                        }}
+                        keyExtractor={(item: PostWithProfileDto) => item.post.id}
+                        contentContainerStyle={styles.listContent}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                tintColor="#fff"
+                            />
+                        }
+                        ListFooterComponent={<View style={{ height: 80 }} />}
+                    />
+                </View>
             )}
 
             <View style={styles.quickAccessMenu}>
