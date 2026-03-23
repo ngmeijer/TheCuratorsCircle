@@ -260,6 +260,11 @@ export default function ProfilePage() {
                     <View style={styles.profilePicturePlaceholder}>
                         <Ionicons name="person" size={40} color="#666" />
                     </View>
+                    {!isViewingOther && (
+                        <Pressable style={styles.editButton} onPress={handleEditProfile}>
+                            <Ionicons name="pencil" size={18} color="#fff" />
+                        </Pressable>
+                    )}
                     <View style={styles.statsColumn}>
                         <View style={styles.statItem}>
                             <Text style={styles.statData}>{collectionsCount}</Text>
@@ -469,6 +474,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#121417',
     },
     editButton: {
+        position: 'absolute',
+        top: 50,
+        right: 2,
         backgroundColor: '#7C6DFF',
         padding: 8,
         borderRadius: 20,
