@@ -13,6 +13,7 @@ namespace Backend.Services
     Task<UserProfile> GetByOwnerUidAsync(string ownerUid);
     Task<(UserProfile Profile, string Error)> CreateAsync(string ownerUid, CreateUserProfileRequest request);
     Task<(UserProfile Profile, string Error)> UpdateAsync(string persistentId, string ownerUid, UpdateUserProfileRequest request);
+    Task<List<UserProfile>> SearchByUsernameAsync(string query);
   }
 
   public class UserProfileService : IUserProfileService
@@ -186,6 +187,37 @@ namespace Backend.Services
       // Fetch updated profile
       var updatedSnap = await profileRef.GetSnapshotAsync();
       return (updatedSnap.ConvertTo<UserProfile>(), null);
+    }
+
+    public async Task<List<UserProfile>> SearchByUsernameAsync(string query)
+    {
+      if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+        return new List<UserProfile>();
+
+      var snapshot = await _db.Collection("userProfiles")
+          .Limit(20)
+          .GetSnapshotAsync();
+
+      var results = new List<UserProfile>();
+      var queryLower = query.ToLower();
+
+      foreach (var doc in snapshot.Documents)
+      {
+        var profile = doc.ConvertTo<UserProfile>();
+        if (profile.UsernamesHistory != null)
+        {
+          foreach (var username in profile.UsernamesHistory)
+          {
+            if (!string.IsNullOrEmpty(username) && username.ToLower().Contains(queryLower))
+            {
+              results.Add(profile);
+              break;
+            }
+          }
+        }
+      }
+
+      return results;
     }
   }
 }

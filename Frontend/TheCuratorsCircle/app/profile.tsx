@@ -10,7 +10,7 @@ import Post from "@/components/Post";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useCallback, useState } from "react";
 import { Colours } from "@/theme/colours";
-import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile } from "@/api/databaseClient";
+import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
@@ -103,12 +103,45 @@ export function useProfileCollections() {
     return { collections, loadingCollections, refreshCollections: loadCollections };
 }
 
+export function useFollowCounts(persistentId: string | null) {
+    const [followingCount, setFollowingCount] = useState(0);
+    const [followersCount, setFollowersCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadCounts() {
+            if (!persistentId) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const [following, followers] = await Promise.all([
+                    getFollowingCount(persistentId),
+                    getFollowersCount(persistentId)
+                ]);
+                setFollowingCount(following);
+                setFollowersCount(followers);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadCounts();
+    }, [persistentId]);
+
+    return { followingCount, followersCount, loading };
+}
+
 export default function ProfilePage() {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile();
     const { posts, loadingPosts } = useProfilePosts();
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
+    const { followingCount, followersCount } = useFollowCounts(profile?.persistentId || null);
     
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
@@ -167,14 +200,14 @@ export default function ProfilePage() {
                             <Text style={styles.statData}>{collectionsCount}</Text>
                             <Text style={styles.statName}>Collections</Text>
                         </View>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>0</Text>
+                        <Pressable style={styles.statItem} onPress={() => router.push({ pathname: '/followingList', params: { userId: profile.persistentId, type: 'followers' } })}>
+                            <Text style={styles.statData}>{followersCount}</Text>
                             <Text style={styles.statName}>Followers</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>0</Text>
+                        </Pressable>
+                        <Pressable style={styles.statItem} onPress={() => router.push({ pathname: '/followingList', params: { userId: profile.persistentId, type: 'following' } })}>
+                            <Text style={styles.statData}>{followingCount}</Text>
                             <Text style={styles.statName}>Following</Text>
-                        </View>
+                        </Pressable>
                     </View>
                 </View>
             </View>

@@ -10,3 +10,14 @@ export interface PostDto {
     commentCount: number;
     shareCount: number;
 }
+
+export interface PostWithProfileDto {
+    post: PostDto;
+    profile: {
+        persistentId: string;
+        ownerUid: string;
+        usernamesHistory: string[];
+        displayName: string;
+        bio: string;
+    } | null;
+}

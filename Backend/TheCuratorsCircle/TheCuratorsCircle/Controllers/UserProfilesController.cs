@@ -85,6 +85,17 @@ public class UserProfilesController : ControllerBase
         return Ok(profile);
     }
 
+    [HttpGet("search")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Search([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            return Ok(new List<UserProfile>());
+
+        var results = await _profileService.SearchByUsernameAsync(q);
+        return Ok(results);
+    }
+
     private IActionResult Forbidden(object error)
     {
         return StatusCode(403, error);

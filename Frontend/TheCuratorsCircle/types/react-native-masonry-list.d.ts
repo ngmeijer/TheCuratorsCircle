@@ -1,6 +1,6 @@
 declare module 'react-native-masonry-list' {
     import { Component } from 'react';
-    import { ViewStyle, ImageSourcePropType } from 'react-native';
+    import { ViewStyle, ImageSourcePropType, RefreshControlProps } from 'react-native';
 
     interface MasonryItem {
         id: string | number;
@@ -14,9 +14,10 @@ declare module 'react-native-masonry-list' {
         [key: string]: any;
     }
 
-    interface MasonryListProps {
+    interface MasonryListProps extends RefreshControlProps {
         data: MasonryItem[];
         columns?: number;
+        numColumns?: number;
         renderItem: (item: { item: MasonryItem; index: number }) => React.ReactNode;
         keyExtractor?: (item: MasonryItem, index: number) => string;
         style?: ViewStyle;
@@ -29,6 +30,7 @@ declare module 'react-native-masonry-list' {
         onEndReachedThreshold?: number;
         ListHeaderComponent?: React.ComponentType<any> | React.ReactElement;
         ListEmptyComponent?: React.ComponentType<any> | React.ReactElement;
+        contentContainerStyle?: ViewStyle;
     }
 
     export default class MasonryList extends Component<MasonryListProps> {}

@@ -1,10 +1,11 @@
 import React, {useEffect, useState, useCallback} from 'react';
-import {View, FlatList, StyleSheet, Text, Pressable, ActivityIndicator, RefreshControl} from 'react-native';
+import {View, StyleSheet, Text, Pressable, ActivityIndicator, RefreshControl} from 'react-native';
+import { FlashList } from "@shopify/flash-list";
 import Post from '../components/Post';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {router} from "expo-router";
-import {PostDto} from "@/DTOs/PostDto";
-import {getPosts, getCurrentUserProfile} from "@/api/databaseClient";
+import {PostWithProfileDto} from "@/DTOs/PostDto";
+import {getFeed, getCurrentUserProfile} from "@/api/databaseClient";
 import {UserProfileDto} from "@/DTOs/UserProfileDto";
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -33,32 +34,58 @@ export function useCurrentUserProfile() {
 }
 
 export function useProfilePosts() {
-    const [posts, setPosts] = useState<PostDto[]>([]);
+    const [posts, setPosts] = useState<PostWithProfileDto[]>([]);
     const [loadingPosts, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-    const loadPosts = useCallback(async () => {
+    const loadPosts = useCallback(async (cursor?: string, isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else if (cursor) {
+            setLoadingMore(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
-            const posts = await getPosts();
-            setPosts(posts);
-        } catch (err) {
-            console.error(err);
+            const result = await getFeed(cursor);
+            if (cursor) {
+                // Append new posts when loading more
+                setPosts(prev => [...prev, ...result.posts]);
+            } else {
+                // Replace posts on refresh or initial load
+                setPosts(result.posts);
+            }
+            setHasMore(result.hasMore);
+            setNextCursor(result.nextCursor);
+        } catch (err: any) {
+            console.error('[Feed] Error loading posts:', err.message || err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
+            setLoadingMore(false);
         }
     }, []);
 
     const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await loadPosts();
-        setRefreshing(false);
+        setNextCursor(null);
+        await loadPosts(undefined, true);
     }, [loadPosts]);
+
+    const loadMore = useCallback(() => {
+        if (!loadingMore && hasMore && nextCursor) {
+            loadPosts(nextCursor);
+        }
+    }, [loadPosts, loadingMore, hasMore, nextCursor]);
 
     useEffect(() => {
         loadPosts();
     }, [loadPosts]);
 
-    return { posts, loadingPosts, refreshing, onRefresh };
+    return { posts, loadingPosts, refreshing, onRefresh, loadMore, loadingMore, hasMore };
 }
 
 function onPressPost() {
@@ -68,7 +95,7 @@ function onPressPost() {
 export default function ForYouPage() {
     const insets = useSafeAreaInsets();
     const { profile, loading: loadingProfile, refresh: refreshProfile } = useCurrentUserProfile();
-    const { posts, loadingPosts, refreshing, onRefresh } = useProfilePosts();
+    const { posts, loadingPosts, refreshing, onRefresh, loadMore, loadingMore, hasMore } = useProfilePosts();
 
     useEffect(() => {
         if (!loadingProfile && !profile) {
@@ -84,41 +111,65 @@ export default function ForYouPage() {
         return <ActivityIndicator size="large" color="#fff" />;
     }
 
-    if (!posts.length) return <Text style={{ color: 'white', textAlign: 'center', marginTop: 50 }}>No posts</Text>;
-
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.logo}>For You</Text>
             </View>
 
-            <FlatList
-                key="posts"
-                data={posts}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                renderItem={({ item }) => (
-                    <Post
-                        item={item}
-                        onPress={() =>
-                            router.push({
-                                pathname:"/postDetails",
-                                params: {id: item.id},
-                            })
+            {!posts.length ? (
+                <View style={styles.emptyFeed}>
+                    <Text style={styles.emptyText}>No posts yet</Text>
+                    <Text style={styles.emptySubtext}>Follow people to see their posts here</Text>
+                </View>
+            ) : (
+                    <FlashList
+                        data={posts}
+                        numColumns={2}
+                        masonry
+                        estimatedItemSize={200}
+                        extraData={posts.length}
+                        onEndReached={loadMore}
+                        onEndReachedThreshold={0.5}
+                        renderItem={({ item }: { item: PostWithProfileDto }) => {
+                            return (
+                                <Post
+                                    item={item.post}
+                                    username={item.profile?.usernamesHistory?.[0] || '@unknown'}
+                                    compact={true}
+                                    onPress={() =>
+                                        router.push({
+                                            pathname:"/postDetails",
+                                            params: {id: item.post.id},
+                                        })
+                                    }
+                                />
+                            );
+                        }}
+                        keyExtractor={(item: PostWithProfileDto) => item.post.id}
+                        contentContainerStyle={styles.listContent}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                tintColor="#fff"
+                            />
+                        }
+                        ListFooterComponent={
+                            loadingMore ? (
+                                <ActivityIndicator size="small" color="#fff" style={{ padding: 20 }} />
+                            ) : !hasMore && posts.length > 0 ? (
+                                <Text style={{ color: '#666', textAlign: 'center', padding: 20 }}>No more posts</Text>
+                            ) : (
+                                <View style={{ height: 80 }} />
+                            )
                         }
                     />
-                )}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor="#fff"
-                    />
-                }
-            />
+            )}
+
             <View style={styles.quickAccessMenu}>
-                <Pressable style={styles.button} onPress={() => console.log('Google')}>
-                    <Ionicons name="albums" size={28} />
+                <Pressable style={styles.button} onPress={() => router.push('/search')}>
+                    <Ionicons name="search" size={28} />
                 </Pressable>
 
                 <Pressable style={styles.button} onPress={() => router.push('/createPost')}>
@@ -174,5 +225,23 @@ const styles = StyleSheet.create({
         padding: 4,
         marginVertical: 2,
         alignItems: 'center',
+    },
+    emptyFeed: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: 100,
+    },
+    emptyText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    emptySubtext: {
+        color: '#888',
+        fontSize: 14,
+        marginTop: 8,
+        textAlign: 'center',
+        paddingHorizontal: 40,
     },
 });
