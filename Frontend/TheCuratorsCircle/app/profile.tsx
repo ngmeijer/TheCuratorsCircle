@@ -395,10 +395,6 @@ const styles = StyleSheet.create({
         paddingRight: 24,
         paddingTop: 30,
     },
-        alignItems: "center",
-        paddingRight: 24,
-        paddingTop: 30,
-    },
     statsColumn: {
         alignItems: 'center',
         justifyContent: 'center',
