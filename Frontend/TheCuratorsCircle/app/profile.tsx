@@ -243,17 +243,13 @@ export default function ProfilePage() {
                 </View>
                 
                 <View style={styles.actionColumn}>
-                    {!isViewingOther ? (
-                        <Pressable style={styles.editButton} onPress={handleEditProfile}>
-                            <Ionicons name="pencil" size={18} color="#fff" />
-                        </Pressable>
-                    ) : !isCurrentUser ? (
+                    {isViewingOther && !isCurrentUser && (
                         <Pressable style={styles.followButtonRow} onPress={toggleFollow}>
                             <Text style={styles.followButtonText}>
                                 {isFollowing ? 'Following' : 'Follow'}
                             </Text>
                         </Pressable>
-                    ) : null}
+                    )}
                 </View>
                 
                 <View style={styles.profileRightSection}>
