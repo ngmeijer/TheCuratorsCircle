@@ -234,7 +234,7 @@ export default function ProfilePage() {
                 contentInsetAdjustmentBehavior="never"
             >
             <View style={styles.profileHeader}>
-                <View style={styles.nameColumn}>
+                <View style={[styles.profileLeftSection, isViewingOther && styles.profileLeftSectionOther]}>
                     <Text style={styles.fullName}>
                         {displayName}
                     </Text>
@@ -250,7 +250,7 @@ export default function ProfilePage() {
                         <Pressable style={styles.editButton} onPress={handleEditProfile}>
                             <Ionicons name="pencil" size={18} color="#fff" />
                         </Pressable>
-                    ) : isViewingOther && !isCurrentUser && (
+                    ) : !isCurrentUser && (
                         <Pressable style={styles.followButtonRow} onPress={toggleFollow}>
                             <Text style={styles.followButtonText}>
                                 {isFollowing ? 'Following' : 'Follow'}
@@ -375,22 +375,8 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: '#1a1d23',
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-    },
-    nameColumn: {
-        width: '55%',
-        paddingRight: 8,
-        paddingLeft: 16,
-        paddingTop: 28,
-        justifyContent: 'center',
-        backgroundColor: '#1a1d23',
-    },
-    actionColumn: {
-        width: '15%',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingTop: 28,
+        flexWrap: 'wrap',
     },
     profileLeftSection: {
         width: '70%',
@@ -400,8 +386,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#1a1d23',
     },
+    profileLeftSectionOther: {
+        width: '60%',
+    },
     profileRightSection: {
         width: '30%',
+        alignItems: "center",
+        paddingRight: 24,
+        paddingTop: 30,
+    },
         alignItems: "center",
         paddingRight: 24,
         paddingTop: 30,
