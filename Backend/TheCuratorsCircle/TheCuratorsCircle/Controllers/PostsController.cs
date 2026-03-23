@@ -125,11 +125,11 @@ public class PostsController : ControllerBase
 
     [HttpGet("feed")]
     [Authorize]
-    public async Task<IActionResult> GetFeed()
+    public async Task<IActionResult> GetFeed([FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
     {
         try
         {
-            _logger.LogInformation("GetFeed request received");
+            _logger.LogInformation("GetFeed request received with startAfter={StartAfter}, limit={Limit}", startAfter, limit);
             
             var firebaseUid = GetCurrentUserId();
             var currentProfile = await _profileService.GetByOwnerUidAsync(firebaseUid);
@@ -141,19 +141,41 @@ public class PostsController : ControllerBase
             
             if (following.Count == 0)
             {
-                return Ok(new List<PostWithProfile>());
+                return Ok(new { posts = new List<PostWithProfile>(), hasMore = false, nextCursor = (string?)null });
             }
 
             var followingIds = following.Select(p => p.PersistentId).ToList();
 
-            // Fetch posts from followed users (requires composite index: userId + createdAt DESC)
-            var query = _firestore.Database.Collection("posts")
+            // Build base query
+            var baseQuery = _firestore.Database.Collection("posts")
                 .WhereIn("userId", followingIds)
-                .OrderByDescending("createdAt")
-                .Limit(100);
+                .OrderByDescending("createdAt");
+
+            // Add cursor filter if provided
+            Query query;
+            if (!string.IsNullOrEmpty(startAfter))
+            {
+                try
+                {
+                    var cursorTimestamp = DateTime.Parse(startAfter);
+                    query = baseQuery
+                        .WhereLessThan("createdAt", cursorTimestamp)
+                        .Limit(limit);
+                }
+                catch
+                {
+                    query = baseQuery.Limit(limit);
+                }
+            }
+            else
+            {
+                query = baseQuery.Limit(limit);
+            }
 
             var snapshot = await query.GetSnapshotAsync();
             var posts = snapshot.Documents.Select(doc => doc.ConvertTo<Post>()).ToList();
+
+            var hasMore = posts.Count == limit;
 
             // Batch fetch all relevant profiles
             var userIds = posts.Select(p => p.UserId).Distinct().ToList();
@@ -169,14 +191,16 @@ public class PostsController : ControllerBase
                 }
             }
 
-            // Join posts with profiles
             var postsWithProfiles = posts.Select(post => new PostWithProfile
             {
                 Post = post,
                 Profile = profilesDict.GetValueOrDefault(post.UserId)
             }).ToList();
 
-            return Ok(postsWithProfiles);
+            var lastPost = postsWithProfiles.LastOrDefault();
+            string? nextCursor = lastPost?.Post != null ? lastPost.Post.CreatedAt.ToString("o") : null;
+
+            return Ok(new { posts = postsWithProfiles, hasMore, nextCursor });
         }
         catch (Exception ex)
         {

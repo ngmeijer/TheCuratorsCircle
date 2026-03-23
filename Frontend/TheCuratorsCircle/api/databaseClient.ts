@@ -470,9 +470,13 @@ export async function getFollowersCount(userId: string): Promise<number> {
     return data.count;
 }
 
-export async function getFeed(): Promise<any[]> {
-    console.log("[API] Getting feed from backend");
-    const response = await fetch(`http://${ipadress}:5044/posts/feed`, {
+export async function getFeed(startAfter?: string, limit: number = 20): Promise<{ posts: any[], hasMore: boolean, nextCursor: string | null }> {
+    let url = `http://${ipadress}:5044/posts/feed?limit=${limit}`;
+    if (startAfter) {
+        url += `&startAfter=${encodeURIComponent(startAfter)}`;
+    }
+    console.log("[API] Getting feed from backend:", startAfter ? 'loading more' : 'first page');
+    const response = await fetch(url, {
         method: "GET",
         headers: getHeaders()
     });
@@ -481,7 +485,7 @@ export async function getFeed(): Promise<any[]> {
 
     if (!response.ok) {
         if (response.status === 401) {
-            return [];
+            return { posts: [], hasMore: false, nextCursor: null };
         }
         let errorMessage = `Error ${response.status}`;
         try {
@@ -497,7 +501,7 @@ export async function getFeed(): Promise<any[]> {
     }
 
     const data = await response.json();
-    console.log("[API] Feed data received:", data.length, "posts");
+    console.log("[API] Feed data received:", data.posts?.length || 0, "posts, hasMore:", data.hasMore);
     return data;
 }
 

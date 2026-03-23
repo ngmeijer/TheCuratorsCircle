@@ -37,29 +37,55 @@ export function useProfilePosts() {
     const [posts, setPosts] = useState<PostWithProfileDto[]>([]);
     const [loadingPosts, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-    const loadPosts = useCallback(async () => {
+    const loadPosts = useCallback(async (cursor?: string, isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else if (cursor) {
+            setLoadingMore(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
-            const posts = await getFeed();
-            setPosts(posts);
+            const result = await getFeed(cursor);
+            if (cursor) {
+                // Append new posts when loading more
+                setPosts(prev => [...prev, ...result.posts]);
+            } else {
+                // Replace posts on refresh or initial load
+                setPosts(result.posts);
+            }
+            setHasMore(result.hasMore);
+            setNextCursor(result.nextCursor);
         } catch (err: any) {
             console.error('[Feed] Error loading posts:', err.message || err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
+            setLoadingMore(false);
         }
     }, []);
 
     const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await loadPosts();
-        setRefreshing(false);
+        setNextCursor(null);
+        await loadPosts(undefined, true);
     }, [loadPosts]);
+
+    const loadMore = useCallback(() => {
+        if (!loadingMore && hasMore && nextCursor) {
+            loadPosts(nextCursor);
+        }
+    }, [loadPosts, loadingMore, hasMore, nextCursor]);
 
     useEffect(() => {
         loadPosts();
     }, [loadPosts]);
 
-    return { posts, loadingPosts, refreshing, onRefresh };
+    return { posts, loadingPosts, refreshing, onRefresh, loadMore, loadingMore, hasMore };
 }
 
 function onPressPost() {
@@ -69,7 +95,7 @@ function onPressPost() {
 export default function ForYouPage() {
     const insets = useSafeAreaInsets();
     const { profile, loading: loadingProfile, refresh: refreshProfile } = useCurrentUserProfile();
-    const { posts, loadingPosts, refreshing, onRefresh } = useProfilePosts();
+    const { posts, loadingPosts, refreshing, onRefresh, loadMore, loadingMore, hasMore } = useProfilePosts();
 
     useEffect(() => {
         if (!loadingProfile && !profile) {
@@ -103,6 +129,8 @@ export default function ForYouPage() {
                         numColumns={2}
                         masonry
                         estimatedItemSize={200}
+                        onEndReached={loadMore}
+                        onEndReachedThreshold={0.5}
                         renderItem={({ item }: { item: PostWithProfileDto }) => {
                             return (
                                 <Post
@@ -127,7 +155,15 @@ export default function ForYouPage() {
                                 tintColor="#fff"
                             />
                         }
-                        ListFooterComponent={<View style={{ height: 80 }} />}
+                        ListFooterComponent={
+                            loadingMore ? (
+                                <ActivityIndicator size="small" color="#fff" style={{ padding: 20 }} />
+                            ) : !hasMore && posts.length > 0 ? (
+                                <Text style={{ color: '#666', textAlign: 'center', padding: 20 }}>No more posts</Text>
+                            ) : (
+                                <View style={{ height: 80 }} />
+                            )
+                        }
                     />
                 </View>
             )}
