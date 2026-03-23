@@ -92,6 +92,13 @@ function onPressPost() {
     router.push("/postDetails");
 }
 
+const handleUsernamePress = (userId: string, username: string) => {
+    router.push({
+        pathname: "/profile",
+        params: { userId: userId }
+    });
+};
+
 export default function ForYouPage() {
     const insets = useSafeAreaInsets();
     const { profile, loading: loadingProfile, refresh: refreshProfile } = useCurrentUserProfile();
@@ -136,7 +143,9 @@ export default function ForYouPage() {
                                 <Post
                                     item={item.post}
                                     username={item.profile?.usernamesHistory?.[0] || '@unknown'}
+                                    userId={item.profile?.persistentId}
                                     compact={true}
+                                    onUsernamePress={handleUsernamePress}
                                     onPress={() =>
                                         router.push({
                                             pathname:"/postDetails",

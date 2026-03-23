@@ -82,7 +82,10 @@ export default function SearchPage() {
         const isCurrentUser = currentUserId === item.persistentId;
 
         return (
-            <View style={styles.resultCard}>
+            <Pressable 
+                style={styles.resultCard}
+                onPress={() => router.push({ pathname: '/profile', params: { userId: item.persistentId } })}
+            >
                 <View style={styles.avatarPlaceholder}>
                     <Ionicons name="person" size={24} color="#666" />
                 </View>
@@ -97,11 +100,14 @@ export default function SearchPage() {
                 ) : (
                     <StyledButton
                         title={isFollowing ? 'Following' : 'Follow'}
-                        onPress={() => handleFollowToggle(item.persistentId)}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleFollowToggle(item.persistentId);
+                        }}
                         style={isFollowing ? styles.followingButton : styles.followButton}
                     />
                 )}
-            </View>
+            </Pressable>
         );
     };
 

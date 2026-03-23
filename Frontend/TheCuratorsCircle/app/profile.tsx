@@ -1,6 +1,6 @@
 ﻿import {Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { router, useFocusEffect } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { DynamicDataButton } from "@/components/DynamicDataButton";
 import { StyledButton } from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
@@ -10,7 +10,7 @@ import Post from "@/components/Post";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useCallback, useState } from "react";
 import { Colours } from "@/theme/colours";
-import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount } from "@/api/databaseClient";
+import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount, getUserProfileById, followUser, unfollowUser, getIsFollowing } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
@@ -24,7 +24,7 @@ const handlePostPress = (postId: string) => {
     });
 }
 
-export function useUserProfile(alias?: string) {
+export function useUserProfile(alias?: string, userId?: string) {
     const [profile, setProfile] = useState<UserProfileDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,9 @@ export function useUserProfile(alias?: string) {
         setError(null);
         try {
             let data;
-            if (alias) {
+            if (userId) {
+                data = await getUserProfileById(userId);
+            } else if (alias) {
                 data = await getUserProfileByAlias(alias);
             } else {
                 data = await getCurrentUserProfile();
@@ -46,7 +48,7 @@ export function useUserProfile(alias?: string) {
         } finally {
             setLoading(false);
         }
-    }, [alias]);
+    }, [alias, userId]);
 
     useEffect(() => {
         loadProfile();
@@ -135,23 +137,75 @@ export function useFollowCounts(persistentId: string | null) {
     return { followingCount, followersCount, loading };
 }
 
+export function useFollowStatus(targetUserId: string | null) {
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isCurrentUser, setIsCurrentUser] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadStatus() {
+            if (!targetUserId) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const currentUser = await getCurrentUserProfile();
+                if (currentUser) {
+                    setIsCurrentUser(currentUser.persistentId === targetUserId);
+                    if (currentUser.persistentId !== targetUserId) {
+                        const following = await getIsFollowing(targetUserId);
+                        setIsFollowing(following);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadStatus();
+    }, [targetUserId]);
+
+    const toggleFollow = async () => {
+        if (isCurrentUser || !targetUserId) return;
+        try {
+            if (isFollowing) {
+                await unfollowUser(targetUserId);
+                setIsFollowing(false);
+            } else {
+                await followUser(targetUserId);
+                setIsFollowing(true);
+            }
+        } catch (err) {
+            console.error('Error toggling follow:', err);
+        }
+    };
+
+    return { isFollowing, isCurrentUser, loading, toggleFollow };
+}
+
 export default function ProfilePage() {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
-    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile();
+    const params = useLocalSearchParams<{ alias?: string; userId?: string }>();
+    const isViewingOther = !!params.alias || !!params.userId;
+    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile(params.alias, params.userId);
     const { posts, loadingPosts } = useProfilePosts();
     const { collections, loadingCollections, refreshCollections } = useProfileCollections();
     const { followingCount, followersCount } = useFollowCounts(profile?.persistentId || null);
+    const { isFollowing, isCurrentUser, toggleFollow } = useFollowStatus(profile?.persistentId || null);
     
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
     
     useEffect(() => {
-        if (!loadingProfile && !profile) {
+        if (!loadingProfile && !profile && !isViewingOther) {
             router.replace('/createProfile');
         }
-    }, [loadingProfile, profile]);
+    }, [loadingProfile, profile, isViewingOther]);
 
     if (loadingProfile || loadingPosts || loadingCollections) {
         return <ActivityIndicator size="large" color="#fff" />;
@@ -192,9 +246,17 @@ export default function ProfilePage() {
                     <View style={styles.profilePicturePlaceholder}>
                         <Ionicons name="person" size={40} color="#666" />
                     </View>
-                    <Pressable style={styles.editButton} onPress={handleEditProfile}>
-                        <Ionicons name="pencil" size={18} color="#fff" />
-                    </Pressable>
+                    {isViewingOther && !isCurrentUser ? (
+                        <Pressable style={styles.followButton} onPress={toggleFollow}>
+                            <Text style={styles.followButtonText}>
+                                {isFollowing ? 'Following' : 'Follow'}
+                            </Text>
+                        </Pressable>
+                    ) : (
+                        <Pressable style={styles.editButton} onPress={handleEditProfile}>
+                            <Ionicons name="pencil" size={18} color="#fff" />
+                        </Pressable>
+                    )}
                     <View style={styles.statsColumn}>
                         <View style={styles.statItem}>
                             <Text style={styles.statData}>{collectionsCount}</Text>
@@ -396,6 +458,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#7C6DFF',
         padding: 8,
         borderRadius: 20,
+    },
+    followButton: {
+        position: 'absolute',
+        top: 50,
+        right: 2,
+        backgroundColor: '#7C6DFF',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+    },
+    followButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
     profileContentTabs: {
         width: '100%',

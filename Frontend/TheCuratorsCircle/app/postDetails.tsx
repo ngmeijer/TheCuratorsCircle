@@ -1,10 +1,10 @@
 import {ActivityIndicator, Image, ScrollView, StyleSheet, Text, View, Pressable} from "react-native";
 import React, {useEffect, useState} from "react";
-import {getPost, getMediaById, MediaSearchResult} from "../api/databaseClient"
+import {getPost, getMediaById, MediaSearchResult, getUserProfileById} from "../api/databaseClient"
 import { useLocalSearchParams } from 'expo-router';
 import { PostDto } from "@/DTOs/PostDto";
 import { IconTextButton } from "@/components/IconTextButton";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 
 type TabType = 'details' | 'discussion' | 'collections' | 'rating';
 
@@ -14,7 +14,7 @@ export default function PostDetails() {
     const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('details');
-    const router = useRouter();
+    const [userProfile, setUserProfile] = useState<any>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -27,6 +27,11 @@ export default function PostDetails() {
                 if (data?.mediaId && data?.mediaType) {
                     const mediaResult = await getMediaById(data.mediaId, data.mediaType);
                     setMedia(mediaResult);
+                }
+
+                if (data?.userId) {
+                    const profile = await getUserProfileById(data.userId);
+                    setUserProfile(profile);
                 }
             } catch (error) {
                 console.error("Fetch error:", error);
@@ -98,6 +103,16 @@ export default function PostDetails() {
                 </View>
 
                 <View style={styles.postHeader}>
+                    <View style={styles.userRow}>
+                        <Pressable 
+                            style={styles.userLink}
+                            onPress={() => userProfile && router.push({ pathname: '/profile', params: { userId: userProfile.persistentId } })}
+                        >
+                            <Text style={styles.usernameLink}>
+                                {userProfile?.usernamesHistory?.[0] || '@unknown'}
+                            </Text>
+                        </Pressable>
+                    </View>
                     <Text style={styles.postTitle}>{postData.title}</Text>
                     {postData.caption && (
                         <Text style={styles.postCaption}>{postData.caption}</Text>
@@ -330,6 +345,17 @@ const styles = StyleSheet.create({
     postHeader: {
         paddingHorizontal: 20,
         paddingTop: 20,
+    },
+    userRow: {
+        marginBottom: 8,
+    },
+    userLink: {
+        alignSelf: 'flex-start',
+    },
+    usernameLink: {
+        color: '#FFB454',
+        fontSize: 16,
+        fontWeight: '600',
     },
     postTitle: {
         color: "#FFFFFF",
