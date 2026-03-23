@@ -234,30 +234,32 @@ export default function ProfilePage() {
                 contentInsetAdjustmentBehavior="never"
             >
             <View style={styles.profileHeader}>
-                <View style={styles.profileLeftSection}>
+                <View style={styles.nameColumn}>
                     <Text style={styles.fullName}>
                         {displayName}
                     </Text>
                     <Text style={styles.username}>{currentUsername}</Text>
-                    {isViewingOther && !isCurrentUser && (
+                    <Text style={styles.biography}>{bio}</Text>
+                </View>
+                
+                <View style={styles.actionColumn}>
+                    {!isViewingOther ? (
+                        <Pressable style={styles.editButton} onPress={handleEditProfile}>
+                            <Ionicons name="pencil" size={18} color="#fff" />
+                        </Pressable>
+                    ) : !isCurrentUser ? (
                         <Pressable style={styles.followButtonRow} onPress={toggleFollow}>
                             <Text style={styles.followButtonText}>
                                 {isFollowing ? 'Following' : 'Follow'}
                             </Text>
                         </Pressable>
-                    )}
-                    <Text style={styles.biography}>{bio}</Text>
+                    ) : null}
                 </View>
                 
                 <View style={styles.profileRightSection}>
                     <View style={styles.profilePicturePlaceholder}>
                         <Ionicons name="person" size={40} color="#666" />
                     </View>
-                    {!isViewingOther && (
-                        <Pressable style={styles.editButton} onPress={handleEditProfile}>
-                            <Ionicons name="pencil" size={18} color="#fff" />
-                        </Pressable>
-                    )}
                     <View style={styles.statsColumn}>
                         <View style={styles.statItem}>
                             <Text style={styles.statData}>{collectionsCount}</Text>
@@ -376,8 +378,22 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: '#1a1d23',
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         flexWrap: 'wrap',
+    },
+    nameColumn: {
+        width: '55%',
+        paddingRight: 8,
+        paddingLeft: 16,
+        paddingTop: 28,
+        justifyContent: 'center',
+        backgroundColor: '#1a1d23',
+    },
+    actionColumn: {
+        width: '15%',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: 28,
     },
     profileLeftSection: {
         width: '70%',
@@ -453,9 +469,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#121417',
     },
     editButton: {
-        position: 'absolute',
-        top: 50,
-        right: 2,
         backgroundColor: '#7C6DFF',
         padding: 8,
         borderRadius: 20,
@@ -472,10 +485,8 @@ const styles = StyleSheet.create({
     followButtonRow: {
         backgroundColor: '#7C6DFF',
         paddingVertical: 8,
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         borderRadius: 20,
-        alignSelf: 'flex-start',
-        marginTop: 8,
     },
     followButtonText: {
         color: '#fff',
