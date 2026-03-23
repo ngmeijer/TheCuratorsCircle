@@ -242,23 +242,19 @@ export default function ProfilePage() {
                     <Text style={styles.biography}>{bio}</Text>
                 </View>
                 
-                <View style={styles.actionColumn}>
-                    {isViewingOther && !isCurrentUser && (
-                        <Pressable style={styles.followButtonRow} onPress={toggleFollow}>
-                            <Text style={styles.followButtonText}>
-                                {isFollowing ? 'Following' : 'Follow'}
-                            </Text>
-                        </Pressable>
-                    )}
-                </View>
-                
                 <View style={styles.profileRightSection}>
                     <View style={styles.profilePicturePlaceholder}>
                         <Ionicons name="person" size={40} color="#666" />
                     </View>
-                    {!isViewingOther && (
+                    {!isViewingOther ? (
                         <Pressable style={styles.editButton} onPress={handleEditProfile}>
                             <Ionicons name="pencil" size={18} color="#fff" />
+                        </Pressable>
+                    ) : isViewingOther && !isCurrentUser && (
+                        <Pressable style={styles.followButtonRow} onPress={toggleFollow}>
+                            <Text style={styles.followButtonText}>
+                                {isFollowing ? 'Following' : 'Follow'}
+                            </Text>
                         </Pressable>
                     )}
                     <View style={styles.statsColumn}>
@@ -487,6 +483,9 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     followButtonRow: {
+        position: 'absolute',
+        top: 50,
+        right: 2,
         backgroundColor: '#7C6DFF',
         paddingVertical: 8,
         paddingHorizontal: 16,
