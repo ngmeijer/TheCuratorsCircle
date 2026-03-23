@@ -31,7 +31,7 @@ export default function Post({ item, username, compact = false, onPress }: PostP
     const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const itemWidth = (width - 24) / 2;
+    const itemWidth = compact ? (width - 24) / 2 : undefined;
 
     useEffect(() => {
         async function fetchMedia() {
@@ -48,9 +48,8 @@ export default function Post({ item, username, compact = false, onPress }: PostP
     }, [item.mediaId, item.mediaType]);
 
     if (loading) {
-        const loadingWidth = compact ? itemWidth - 4 : undefined;
         return (
-            <View style={[compact ? styles.containerCompact : styles.container, loadingWidth ? { width: loadingWidth } : {}]}>
+            <View style={[compact ? styles.containerCompact : styles.container, itemWidth ? { width: itemWidth } : {}]}>
                 <ActivityIndicator size="large" color="#fff" />
             </View>
         );
@@ -61,11 +60,11 @@ export default function Post({ item, username, compact = false, onPress }: PostP
             onPress={onPress}
             style={({ pressed }) => [
                 compact ? styles.containerCompact : styles.container,
-                compact ? { width: itemWidth - 4 } : {},
+                itemWidth ? { width: itemWidth } : {},
                 { opacity: pressed ? 0.8 : 1 }
             ]}
         >
-            <View style={compact ? [styles.imageWrapperCompact, { width: itemWidth - 8 }] : styles.imageWrapper}>
+            <View style={compact ? [styles.imageWrapperCompact, itemWidth ? { width: itemWidth - 8 } : {}] : styles.imageWrapper}>
                 {media?.posterUrl ? (
                     <Image
                         source={{ uri: media.posterUrl }}

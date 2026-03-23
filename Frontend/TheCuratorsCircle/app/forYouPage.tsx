@@ -123,12 +123,12 @@ export default function ForYouPage() {
                     <Text style={styles.emptySubtext}>Follow people to see their posts here</Text>
                 </View>
             ) : (
-                <View style={{ flex: 1 }}>
                     <FlashList
                         data={posts}
                         numColumns={2}
                         masonry
                         estimatedItemSize={200}
+                        extraData={posts.length}
                         onEndReached={loadMore}
                         onEndReachedThreshold={0.5}
                         renderItem={({ item }: { item: PostWithProfileDto }) => {
@@ -165,7 +165,6 @@ export default function ForYouPage() {
                             )
                         }
                     />
-                </View>
             )}
 
             <View style={styles.quickAccessMenu}>
