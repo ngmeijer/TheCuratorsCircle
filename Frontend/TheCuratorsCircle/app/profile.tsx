@@ -10,7 +10,7 @@ import Post from "@/components/Post";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useCallback, useState } from "react";
 import { Colours } from "@/theme/colours";
-import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount, getUserProfileById, followUser, unfollowUser, getIsFollowing } from "@/api/databaseClient";
+import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount, getUserProfileById, followUser, unfollowUser, getIsFollowing, getCollectionsByUserId } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
@@ -80,21 +80,23 @@ export function useProfilePosts() {
     return { posts, loadingPosts };
 }
 
-export function useProfileCollections() {
+export function useProfileCollections(userId?: string) {
     const [collections, setCollections] = useState<CollectionDto[]>([]);
     const [loadingCollections, setLoading] = useState(true);
 
     const loadCollections = useCallback(async () => {
         setLoading(true);
         try {
-            const collections = await getCollections();
-            setCollections(collections);
+            const data = userId 
+                ? await getCollectionsByUserId(userId)
+                : await getCollections();
+            setCollections(data);
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [userId]);
 
     useFocusEffect(
         useCallback(() => {
@@ -193,7 +195,8 @@ export default function ProfilePage() {
     const isViewingOther = !!params.alias || !!params.userId;
     const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile(params.alias, params.userId);
     const { posts, loadingPosts } = useProfilePosts();
-    const { collections, loadingCollections, refreshCollections } = useProfileCollections();
+    const collectionsUserId = isViewingOther ? profile?.persistentId : undefined;
+    const { collections, loadingCollections, refreshCollections } = useProfileCollections(collectionsUserId);
     const { followingCount, followersCount } = useFollowCounts(profile?.persistentId || null);
     const { isFollowing, isCurrentUser, toggleFollow } = useFollowStatus(profile?.persistentId || null);
     
@@ -306,7 +309,7 @@ export default function ProfilePage() {
             {activeTab === "collections" ? (
                 <View style={styles.collectionsContainer}>
                     <FlashList
-                        data={[{ id: 'create-new', type: 'create' } as any, ...collections.map(c => ({ ...c, type: 'collection' }))]}
+                        data={[...(isViewingOther ? [] : [{ id: 'create-new', type: 'create' } as any]), ...collections.map(c => ({ ...c, type: 'collection' }))]}
                         renderItem={({ item }: any) => {
                             if (item.type === 'create') {
                                 return (
