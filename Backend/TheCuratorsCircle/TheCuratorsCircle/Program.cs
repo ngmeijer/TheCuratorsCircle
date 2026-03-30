@@ -10,6 +10,7 @@ using TheCuratorsCircle.Clients;
 using TheCuratorsCircle.Controllers;
 using TheCuratorsCircle.Authentication;
 using Backend.Services;
+using TheCuratorsCircle.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddSingleton(FirestoreDb.Create("the-curator-s-circle"));
 
 builder.Services.AddSingleton<IUserProfileService, UserProfileService>();
 builder.Services.AddSingleton<IFollowService, FollowService>();
+builder.Services.AddSingleton<ICollectionRepository, FirestoreCollectionRepository>();
 
 builder.Services.AddHttpClient<APIHTTPClient>();
 builder.Services.AddHttpClient<RawgClient>();

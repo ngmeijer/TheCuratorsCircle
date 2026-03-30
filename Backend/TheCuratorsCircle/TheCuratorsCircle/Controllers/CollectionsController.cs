@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Backend.Services;
 using TheCuratorsCircle.Clients;
 using TheCuratorsCircle.Models.Content;
+using TheCuratorsCircle.Repositories;
 
 namespace TheCuratorsCircle.Controllers;
 
@@ -11,14 +12,14 @@ namespace TheCuratorsCircle.Controllers;
 [Route("collections")]
 public class CollectionsController : ControllerBase
 {
-    private readonly FirestoreClient _firestore;
+    private readonly ICollectionRepository _collectionRepository;
     private readonly ILogger<CollectionsController> _logger;
     private readonly APIHTTPClient _apiClient;
     private readonly IUserProfileService _profileService;
 
-    public CollectionsController(FirestoreClient firestore, ILogger<CollectionsController> logger, APIHTTPClient apiClient, IUserProfileService profileService)
+    public CollectionsController(ICollectionRepository collectionRepository, ILogger<CollectionsController> logger, APIHTTPClient apiClient, IUserProfileService profileService)
     {
-        _firestore = firestore;
+        _collectionRepository = collectionRepository;
         _logger = logger;
         _apiClient = apiClient;
         _profileService = profileService;
@@ -60,11 +61,10 @@ public class CollectionsController : ControllerBase
                 CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
             };
 
-            var collectionsRef = _firestore.Database.Collection("collections");
-            await collectionsRef.Document(collection.Id).SetAsync(collection);
+            var createdCollection = await _collectionRepository.CreateCollectionAsync(collection);
 
             _logger.LogInformation("Collection created successfully - CollectionId: {CollectionId}, UserId: {PersistentId}", collection.Id, persistentId);
-            return Ok(collection);
+            return Ok(createdCollection);
         }
         catch (Exception ex)
         {
@@ -82,14 +82,8 @@ public class CollectionsController : ControllerBase
 
         try
         {
-            var collectionsRef = _firestore.Database.Collection("collections");
-            
-            var snapshot = await collectionsRef
-                .WhereEqualTo("userId", targetUserId)
-                .GetSnapshotAsync();
+            var collections = await _collectionRepository.GetCollectionsByUserIdAsync(targetUserId);
 
-            var collections = snapshot.Documents.Select(doc => doc.ConvertTo<CollectionEntity>()).ToList();
-            
             var orderedCollections = collections
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();
@@ -115,10 +109,9 @@ public class CollectionsController : ControllerBase
                     var firstPostId = collection.ItemIds[0];
                     try
                     {
-                        var postDoc = await _firestore.Database.Collection("posts").Document(firstPostId).GetSnapshotAsync();
-                        if (postDoc.Exists)
+                        var post = await _collectionRepository.GetPostByIdAsync(firstPostId);
+                        if (post != null)
                         {
-                            var post = postDoc.ConvertTo<Post>();
                             var mediaInfo = await _apiClient.FetchMediaByIdAsync(post.MediaId);
                             if (mediaInfo != null)
                             {
@@ -160,16 +153,13 @@ public class CollectionsController : ControllerBase
 
         try
         {
-            var docRef = _firestore.Database.Collection("collections").Document(collectionId);
-            var doc = await docRef.GetSnapshotAsync();
+            var collection = await _collectionRepository.GetCollectionByIdAsync(collectionId);
 
-            if (!doc.Exists)
+            if (collection == null)
             {
                 _logger.LogWarning("Collection not found - CollectionId: {CollectionId}", collectionId);
                 return NotFound(new { message = "Collection not found" });
             }
-
-            var collection = doc.ConvertTo<CollectionEntity>();
 
             if (collection.UserId != persistentId)
             {
