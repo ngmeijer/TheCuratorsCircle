@@ -234,7 +234,7 @@ export default function ProfilePage() {
                 contentInsetAdjustmentBehavior="never"
             >
             <View style={styles.profileHeader}>
-                <View style={[styles.profileLeftSection, isViewingOther && styles.profileLeftSectionOther]}>
+                <View style={styles.profileLeftSection}>
                     <Text style={styles.fullName}>
                         {displayName}
                     </Text>
@@ -246,22 +246,21 @@ export default function ProfilePage() {
                     <View style={styles.profilePicturePlaceholder}>
                         <Ionicons name="person" size={40} color="#666" />
                     </View>
-                    {!isViewingOther ? (
+                    {!isViewingOther && (
                         <Pressable style={styles.editButton} onPress={handleEditProfile}>
                             <Ionicons name="pencil" size={18} color="#fff" />
                         </Pressable>
-                    ) : !isCurrentUser && (
-                        <Pressable style={styles.followButtonRow} onPress={toggleFollow}>
-                            <Text style={styles.followButtonText}>
-                                {isFollowing ? 'Following' : 'Follow'}
-                            </Text>
+                    )}
+                    {isViewingOther && !isCurrentUser && (
+                        <Pressable style={styles.followIconButton} onPress={toggleFollow}>
+                            <Ionicons 
+                                name={isFollowing ? "checkmark-circle" : "person-add"} 
+                                size={28} 
+                                color={isFollowing ? "#4CAF50" : "#FFB454"} 
+                            />
                         </Pressable>
                     )}
                     <View style={styles.statsColumn}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>{collectionsCount}</Text>
-                            <Text style={styles.statName}>Collections</Text>
-                        </View>
                         <Pressable style={styles.statItem} onPress={() => router.push({ pathname: '/followingList', params: { userId: profile.persistentId, type: 'followers' } })}>
                             <Text style={styles.statData}>{followersCount}</Text>
                             <Text style={styles.statName}>Followers</Text>
@@ -277,7 +276,7 @@ export default function ProfilePage() {
             <View style={styles.profileContentTabs}>
                 <View style={styles.profileContentButtons}>
                     <StyledButton
-                        title="Collections"
+                        title={`Collections (${collectionsCount})`}
                         onPress={() => setActiveTab("collections")}
                         style={[
                             styles.tabButton,
@@ -290,7 +289,7 @@ export default function ProfilePage() {
                     />
 
                     <StyledButton
-                        title="Posts"
+                        title={`Posts (${posts.length})`}
                         onPress={() => setActiveTab("posts")}
                         style={[
                             styles.tabButton,
@@ -461,6 +460,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#7C6DFF',
         padding: 8,
         borderRadius: 20,
+    },
+    followIconButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
     },
     followButton: {
         position: 'absolute',

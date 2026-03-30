@@ -12,6 +12,8 @@
 - Use meaningful commit messages that describe what changed
 - Review diffs before committing
 - **Never commit without explicit user approval** - always ask for approval before making commits
+- **Don't commit after every single change** - batch related changes together into meaningful commits
+- Only commit when the feature/task is complete or at a logical checkpoint
 
 ### Code Standards
 - Follow existing code style and conventions in the codebase
