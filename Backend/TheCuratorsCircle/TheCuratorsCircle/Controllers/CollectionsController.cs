@@ -1,5 +1,7 @@
 using Google.Cloud.Firestore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using Backend.Services;
 using TheCuratorsCircle.Clients;
@@ -10,6 +12,7 @@ namespace TheCuratorsCircle.Controllers;
 
 [ApiController]
 [Route("collections")]
+[Authorize]
 public class CollectionsController : ControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
@@ -38,6 +41,7 @@ public class CollectionsController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> CreateCollection([FromBody] CreateCollectionRequest request)
     {
         _logger.LogInformation("CreateCollection request received - Name: {Name}", request.Name);
@@ -48,7 +52,9 @@ public class CollectionsController : ControllerBase
             return BadRequest(new { message = "Invalid data. Collection name is required." });
         }
 
-        var persistentId = await GetCurrentUserPersistentIdAsync();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
 
         try
         {
@@ -78,7 +84,9 @@ public class CollectionsController : ControllerBase
     {
         _logger.LogInformation("GetCollections request received - UserId filter: {UserId}", userId);
 
-        var targetUserId = userId ?? await GetCurrentUserPersistentIdAsync();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
 
         try
         {
@@ -149,7 +157,9 @@ public class CollectionsController : ControllerBase
     {
         _logger.LogInformation("GetCollection request received - CollectionId: {CollectionId}", collectionId);
 
-        var persistentId = await GetCurrentUserPersistentIdAsync();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
 
         try
         {

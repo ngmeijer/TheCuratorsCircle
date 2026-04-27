@@ -1,9 +1,9 @@
-﻿let ipadress = "100.119.203.57";
+import { API_BASE_URL } from "../config";
 
 export async function login(email : string, password: string) {
     const json = JSON.stringify({email, password});
 
-    const response = await fetch(`http://${ipadress}:5044/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -30,7 +30,7 @@ export async function login(email : string, password: string) {
 export async function signup(email : string, password: string) {
     const json = JSON.stringify({email, password});
 
-    const response = await fetch(`http://${ipadress}:5044/auth/signup`, {
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

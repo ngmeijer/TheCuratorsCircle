@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Backend.Services;
 using Backend.Models.Profiles;
 using System.Threading.Tasks;
@@ -51,6 +52,7 @@ public class UserProfilesController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> Create([FromBody] CreateUserProfileRequest request)
     {
         var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -66,6 +68,7 @@ public class UserProfilesController : ControllerBase
 
     [HttpPut("{persistentId}")]
     [Authorize]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> Update(string persistentId, [FromBody] UpdateUserProfileRequest request)
     {
         var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -8,6 +8,7 @@ using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using TheCuratorsCircle.Authentication;
 using TheCuratorsCircle.Models;
@@ -30,6 +31,7 @@ public class AuthenticationController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> Login([FromBody]LoginRequest request)
     {
         if (!ModelState.IsValid)
@@ -58,6 +60,7 @@ public class AuthenticationController : ControllerBase
     }
     
     [HttpPost("signup")]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> Signup([FromBody]RegisterRequest request)
     {
         if (!ModelState.IsValid)
