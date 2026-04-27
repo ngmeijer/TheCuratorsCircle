@@ -1,5 +1,7 @@
 using Google.Cloud.Firestore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using TheCuratorsCircle.Clients;
 using TheCuratorsCircle.Models.Content;
@@ -8,6 +10,7 @@ namespace TheCuratorsCircle.Controllers;
 
 [ApiController]
 [Route("collections")]
+[Authorize]
 public class CollectionsController : ControllerBase
 {
     private readonly FirestoreClient _firestore;
@@ -22,6 +25,7 @@ public class CollectionsController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> CreateCollection([FromBody] CreateCollectionRequest request)
     {
         _logger.LogInformation("CreateCollection request received - Name: {Name}", request.Name);
@@ -32,11 +36,9 @@ public class CollectionsController : ControllerBase
             return BadRequest(new { message = "Invalid data. Collection name is required." });
         }
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
-        {
-            userId = "test-user-id";
-        }
+            return Unauthorized();
 
         try
         {
@@ -67,11 +69,9 @@ public class CollectionsController : ControllerBase
     {
         _logger.LogInformation("GetCollections request received");
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
-        {
-            userId = "test-user-id";
-        }
+            return Unauthorized();
 
         try
         {
@@ -149,11 +149,9 @@ public class CollectionsController : ControllerBase
     {
         _logger.LogInformation("GetCollection request received - CollectionId: {CollectionId}", collectionId);
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
-        {
-            userId = "test-user-id";
-        }
+            return Unauthorized();
 
         try
         {

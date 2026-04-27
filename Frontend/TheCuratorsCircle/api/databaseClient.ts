@@ -1,6 +1,6 @@
 import {PostDto} from "@/DTOs/PostDto";
+import { API_BASE_URL } from "./config";
 
-let ipadress = "100.119.203.57";
 let authToken: string | null = null;
 
 export function setAuthToken(token: string | null) {
@@ -16,7 +16,7 @@ function getHeaders(): HeadersInit {
 
 export async function getCollections() {
     console.log("Getting collections from backend");
-    const response = await fetch(`http://${ipadress}:5044/collections`, {
+    const response = await fetch(`${API_BASE_URL}/collections`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -40,7 +40,7 @@ export async function getCollections() {
 
 export async function getCollection(collectionId: string) {
     console.log("Getting collection from backend:", collectionId);
-    const response = await fetch(`http://${ipadress}:5044/collections/${collectionId}`, {
+    const response = await fetch(`${API_BASE_URL}/collections/${collectionId}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -68,7 +68,7 @@ export interface CreateCollectionPayload {
 
 export async function createCollection(payload: CreateCollectionPayload) {
     console.log("Creating collection:", payload);
-    const response = await fetch(`http://${ipadress}:5044/collections`, {
+    const response = await fetch(`${API_BASE_URL}/collections`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(payload)
@@ -93,7 +93,7 @@ export async function createCollection(payload: CreateCollectionPayload) {
 
 export async function getPosts() {
     console.log("Getting posts from backend");
-    const response = await fetch(`http://${ipadress}:5044/posts`, {
+    const response = await fetch(`${API_BASE_URL}/posts`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -119,7 +119,7 @@ export async function getPosts() {
 
 export async function getPost(postId: string){
     console.log("Getting specific post from backend");
-    const response = await fetch(`http://${ipadress}:5044/posts/${postId}`, {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -158,7 +158,7 @@ export interface MediaSearchResult {
 
 export async function searchMedia(query: string, category: MediaCategory = 'movie'): Promise<MediaSearchResult[]> {
     console.log("Searching media:", query, category);
-    const response = await fetch(`http://${ipadress}:5044/media/search?query=${encodeURIComponent(query)}&mediaType=${encodeURIComponent(category)}`, {
+    const response = await fetch(`${API_BASE_URL}/media/search?query=${encodeURIComponent(query)}&mediaType=${encodeURIComponent(category)}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -173,7 +173,7 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
 
 export async function getMediaById(id: string, mediaType: string = 'movie'): Promise<MediaSearchResult | null> {
     console.log("Getting media by ID:", id, mediaType);
-    const response = await fetch(`http://${ipadress}:5044/media/media?id=${encodeURIComponent(id)}&mediaType=${encodeURIComponent(mediaType)}`, {
+    const response = await fetch(`${API_BASE_URL}/media/media?id=${encodeURIComponent(id)}&mediaType=${encodeURIComponent(mediaType)}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -197,7 +197,7 @@ export interface CreatePostPayload {
 
 export async function createPost(payload: CreatePostPayload): Promise<any> {
     console.log("Creating post:", payload);
-    const response = await fetch(`http://${ipadress}:5044/posts`, {
+    const response = await fetch(`${API_BASE_URL}/posts`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(payload)
@@ -226,7 +226,7 @@ export interface CreateUserProfilePayload {
 
 export async function getUserProfileByAlias(alias: string): Promise<any> {
     console.log("Getting user profile by alias:", alias);
-    const response = await fetch(`http://${ipadress}:5044/userprofiles/by-alias/${encodeURIComponent(alias)}`, {
+    const response = await fetch(`${API_BASE_URL}/userprofiles/by-alias/${encodeURIComponent(alias)}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -254,7 +254,7 @@ export async function getUserProfileByAlias(alias: string): Promise<any> {
 
 export async function getUserProfileById(persistentId: string): Promise<any> {
     console.log("Getting user profile by ID:", persistentId);
-    const response = await fetch(`http://${ipadress}:5044/userprofiles/${persistentId}`, {
+    const response = await fetch(`${API_BASE_URL}/userprofiles/${persistentId}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -282,7 +282,7 @@ export async function getUserProfileById(persistentId: string): Promise<any> {
 
 export async function createUserProfile(payload: CreateUserProfilePayload): Promise<any> {
     console.log("Creating user profile:", payload);
-    const response = await fetch(`http://${ipadress}:5044/userprofiles`, {
+    const response = await fetch(`${API_BASE_URL}/userprofiles`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(payload)
@@ -313,7 +313,7 @@ export async function createUserProfile(payload: CreateUserProfilePayload): Prom
 
 export async function getCurrentUserProfile(): Promise<any> {
     console.log("Getting current user profile");
-    const response = await fetch(`http://${ipadress}:5044/userprofiles/me`, {
+    const response = await fetch(`${API_BASE_URL}/userprofiles/me`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -348,7 +348,7 @@ export interface UpdateUserProfilePayload {
 
 export async function updateUserProfile(persistentId: string, payload: UpdateUserProfilePayload): Promise<any> {
     console.log("Updating user profile:", persistentId, payload);
-    const response = await fetch(`http://${ipadress}:5044/userprofiles/${persistentId}`, {
+    const response = await fetch(`${API_BASE_URL}/userprofiles/${persistentId}`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify(payload)
@@ -374,7 +374,7 @@ export async function updateUserProfile(persistentId: string, payload: UpdateUse
 
 export async function followUser(targetUserId: string): Promise<any> {
     console.log("Following user:", targetUserId);
-    const response = await fetch(`http://${ipadress}:5044/follows`, {
+    const response = await fetch(`${API_BASE_URL}/follows`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ targetUserId })
@@ -390,7 +390,7 @@ export async function followUser(targetUserId: string): Promise<any> {
 
 export async function unfollowUser(targetUserId: string): Promise<any> {
     console.log("Unfollowing user:", targetUserId);
-    const response = await fetch(`http://${ipadress}:5044/follows/${targetUserId}`, {
+    const response = await fetch(`${API_BASE_URL}/follows/${targetUserId}`, {
         method: "DELETE",
         headers: getHeaders()
     });
@@ -405,7 +405,7 @@ export async function unfollowUser(targetUserId: string): Promise<any> {
 
 export async function getFollowingList(): Promise<any[]> {
     console.log("Getting following list");
-    const response = await fetch(`http://${ipadress}:5044/follows/me/following`, {
+    const response = await fetch(`${API_BASE_URL}/follows/me/following`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -420,7 +420,7 @@ export async function getFollowingList(): Promise<any[]> {
 
 export async function getFollowersList(): Promise<any[]> {
     console.log("Getting followers list");
-    const response = await fetch(`http://${ipadress}:5044/follows/me/followers`, {
+    const response = await fetch(`${API_BASE_URL}/follows/me/followers`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -435,7 +435,7 @@ export async function getFollowersList(): Promise<any[]> {
 
 export async function getIsFollowing(userId: string): Promise<boolean> {
     console.log("Checking if following:", userId);
-    const response = await fetch(`http://${ipadress}:5044/follows/${userId}/is-following`, {
+    const response = await fetch(`${API_BASE_URL}/follows/${userId}/is-following`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -449,7 +449,7 @@ export async function getIsFollowing(userId: string): Promise<boolean> {
 }
 
 export async function getFollowingCount(userId: string): Promise<number> {
-    const response = await fetch(`http://${ipadress}:5044/follows/${userId}/following-count`, {
+    const response = await fetch(`${API_BASE_URL}/follows/${userId}/following-count`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -460,7 +460,7 @@ export async function getFollowingCount(userId: string): Promise<number> {
 }
 
 export async function getFollowersCount(userId: string): Promise<number> {
-    const response = await fetch(`http://${ipadress}:5044/follows/${userId}/followers-count`, {
+    const response = await fetch(`${API_BASE_URL}/follows/${userId}/followers-count`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -471,7 +471,7 @@ export async function getFollowersCount(userId: string): Promise<number> {
 }
 
 export async function getFeed(startAfter?: string, limit: number = 20): Promise<{ posts: any[], hasMore: boolean, nextCursor: string | null }> {
-    let url = `http://${ipadress}:5044/posts/feed?limit=${limit}`;
+    let url = `${API_BASE_URL}/posts/feed?limit=${limit}`;
     if (startAfter) {
         url += `&startAfter=${encodeURIComponent(startAfter)}`;
     }
@@ -507,8 +507,8 @@ export async function getFeed(startAfter?: string, limit: number = 20): Promise<
 
 export async function searchUsers(query: string): Promise<any[]> {
     if (!query || query.length < 2) return [];
-    
-    const response = await fetch(`http://${ipadress}:5044/userprofiles/search?q=${encodeURIComponent(query)}`, {
+
+    const response = await fetch(`${API_BASE_URL}/userprofiles/search?q=${encodeURIComponent(query)}`, {
         method: "GET",
         headers: getHeaders()
     });

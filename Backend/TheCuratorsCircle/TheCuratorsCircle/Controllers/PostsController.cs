@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Google.Cloud.Firestore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TheCuratorsCircle.Clients;
 using TheCuratorsCircle.Models.Content;
 using Backend.Services;
@@ -41,6 +42,7 @@ public class PostsController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
     {
         _logger.LogInformation("CreatePost request received - MediaType: {MediaType}, MediaId: {MediaId}, CollectionId: {CollectionId}", request.MediaType, request.MediaId, request.CollectionId);

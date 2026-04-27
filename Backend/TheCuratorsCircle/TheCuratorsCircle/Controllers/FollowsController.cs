@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Backend.Services;
 
 namespace TheCuratorsCircle.Controllers;
@@ -27,6 +28,7 @@ public class FollowsController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> Follow([FromBody] FollowRequest request)
     {
         var currentUserId = GetCurrentUserId();
@@ -44,6 +46,7 @@ public class FollowsController : ControllerBase
     }
 
     [HttpDelete("{targetUserId}")]
+    [EnableRateLimiting("write")]
     public async Task<IActionResult> Unfollow(string targetUserId)
     {
         var currentUserId = GetCurrentUserId();
