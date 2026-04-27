@@ -38,6 +38,27 @@ export async function getCollections() {
     return receivedData;
 }
 
+export async function getCollectionsByUserId(userId: string) {
+    const response = await fetch(`http://${ipadress}:5044/collections?userId=${encodeURIComponent(userId)}`, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if(!response.ok) {
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            data = { message: "Unknown error."};
+        }
+
+        throw new Error(data.message);
+    }
+
+    const receivedData = await response.json();
+    return receivedData;
+}
+
 export async function getCollection(collectionId: string) {
     console.log("Getting collection from backend:", collectionId);
     const response = await fetch(`${API_BASE_URL}/collections/${collectionId}`, {

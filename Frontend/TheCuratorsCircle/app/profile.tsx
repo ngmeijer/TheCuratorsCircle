@@ -1,6 +1,6 @@
 ﻿import {Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, useWindowDimensions} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { router, useFocusEffect } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { DynamicDataButton } from "@/components/DynamicDataButton";
 import { StyledButton } from "@/components/StyledButton";
 import CollectionButton from "@/components/CollectionButton";
@@ -10,7 +10,7 @@ import Post from "@/components/Post";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useCallback, useState } from "react";
 import { Colours } from "@/theme/colours";
-import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount } from "@/api/databaseClient";
+import { getCollections, getPosts, getUserProfileByAlias, getCurrentUserProfile, getFollowingCount, getFollowersCount, getUserProfileById, followUser, unfollowUser, getIsFollowing, getCollectionsByUserId } from "@/api/databaseClient";
 import { PostDto } from "@/DTOs/PostDto"
 import { CollectionDto } from "@/DTOs/CollectionDto"
 import { UserProfileDto } from "@/DTOs/UserProfileDto";
@@ -24,7 +24,7 @@ const handlePostPress = (postId: string) => {
     });
 }
 
-export function useUserProfile(alias?: string) {
+export function useUserProfile(alias?: string, userId?: string) {
     const [profile, setProfile] = useState<UserProfileDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,9 @@ export function useUserProfile(alias?: string) {
         setError(null);
         try {
             let data;
-            if (alias) {
+            if (userId) {
+                data = await getUserProfileById(userId);
+            } else if (alias) {
                 data = await getUserProfileByAlias(alias);
             } else {
                 data = await getCurrentUserProfile();
@@ -46,7 +48,7 @@ export function useUserProfile(alias?: string) {
         } finally {
             setLoading(false);
         }
-    }, [alias]);
+    }, [alias, userId]);
 
     useEffect(() => {
         loadProfile();
@@ -78,21 +80,23 @@ export function useProfilePosts() {
     return { posts, loadingPosts };
 }
 
-export function useProfileCollections() {
+export function useProfileCollections(userId?: string) {
     const [collections, setCollections] = useState<CollectionDto[]>([]);
     const [loadingCollections, setLoading] = useState(true);
 
     const loadCollections = useCallback(async () => {
         setLoading(true);
         try {
-            const collections = await getCollections();
-            setCollections(collections);
+            const data = userId 
+                ? await getCollectionsByUserId(userId)
+                : await getCollections();
+            setCollections(data);
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [userId]);
 
     useFocusEffect(
         useCallback(() => {
@@ -135,23 +139,76 @@ export function useFollowCounts(persistentId: string | null) {
     return { followingCount, followersCount, loading };
 }
 
+export function useFollowStatus(targetUserId: string | null) {
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isCurrentUser, setIsCurrentUser] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadStatus() {
+            if (!targetUserId) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const currentUser = await getCurrentUserProfile();
+                if (currentUser) {
+                    setIsCurrentUser(currentUser.persistentId === targetUserId);
+                    if (currentUser.persistentId !== targetUserId) {
+                        const following = await getIsFollowing(targetUserId);
+                        setIsFollowing(following);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadStatus();
+    }, [targetUserId]);
+
+    const toggleFollow = async () => {
+        if (isCurrentUser || !targetUserId) return;
+        try {
+            if (isFollowing) {
+                await unfollowUser(targetUserId);
+                setIsFollowing(false);
+            } else {
+                await followUser(targetUserId);
+                setIsFollowing(true);
+            }
+        } catch (err) {
+            console.error('Error toggling follow:', err);
+        }
+    };
+
+    return { isFollowing, isCurrentUser, loading, toggleFollow };
+}
+
 export default function ProfilePage() {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
-    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile();
+    const params = useLocalSearchParams<{ alias?: string; userId?: string }>();
+    const isViewingOther = !!params.alias || !!params.userId;
+    const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile(params.alias, params.userId);
     const { posts, loadingPosts } = useProfilePosts();
-    const { collections, loadingCollections, refreshCollections } = useProfileCollections();
+    const collectionsUserId = isViewingOther ? profile?.persistentId : undefined;
+    const { collections, loadingCollections, refreshCollections } = useProfileCollections(collectionsUserId);
     const { followingCount, followersCount } = useFollowCounts(profile?.persistentId || null);
+    const { isFollowing, isCurrentUser, toggleFollow } = useFollowStatus(profile?.persistentId || null);
     
     const [activeTab, setActiveTab] = useState<"collections" | "posts">("collections");
     const [modalVisible, setModalVisible] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
     
     useEffect(() => {
-        if (!loadingProfile && !profile) {
+        if (!loadingProfile && !profile && !isViewingOther) {
             router.replace('/createProfile');
         }
-    }, [loadingProfile, profile]);
+    }, [loadingProfile, profile, isViewingOther]);
 
     if (loadingProfile || loadingPosts || loadingCollections) {
         return <ActivityIndicator size="large" color="#fff" />;
@@ -192,14 +249,21 @@ export default function ProfilePage() {
                     <View style={styles.profilePicturePlaceholder}>
                         <Ionicons name="person" size={40} color="#666" />
                     </View>
-                    <Pressable style={styles.editButton} onPress={handleEditProfile}>
-                        <Ionicons name="pencil" size={18} color="#fff" />
-                    </Pressable>
+                    {!isViewingOther && (
+                        <Pressable style={styles.editButton} onPress={handleEditProfile}>
+                            <Ionicons name="pencil" size={18} color="#fff" />
+                        </Pressable>
+                    )}
+                    {isViewingOther && !isCurrentUser && (
+                        <Pressable style={styles.followIconButton} onPress={toggleFollow}>
+                            <Ionicons 
+                                name={isFollowing ? "checkmark-circle" : "person-add"} 
+                                size={28} 
+                                color={isFollowing ? "#4CAF50" : "#FFB454"} 
+                            />
+                        </Pressable>
+                    )}
                     <View style={styles.statsColumn}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statData}>{collectionsCount}</Text>
-                            <Text style={styles.statName}>Collections</Text>
-                        </View>
                         <Pressable style={styles.statItem} onPress={() => router.push({ pathname: '/followingList', params: { userId: profile.persistentId, type: 'followers' } })}>
                             <Text style={styles.statData}>{followersCount}</Text>
                             <Text style={styles.statName}>Followers</Text>
@@ -215,7 +279,7 @@ export default function ProfilePage() {
             <View style={styles.profileContentTabs}>
                 <View style={styles.profileContentButtons}>
                     <StyledButton
-                        title="Collections"
+                        title={`Collections (${collectionsCount})`}
                         onPress={() => setActiveTab("collections")}
                         style={[
                             styles.tabButton,
@@ -228,7 +292,7 @@ export default function ProfilePage() {
                     />
 
                     <StyledButton
-                        title="Posts"
+                        title={`Posts (${posts.length})`}
                         onPress={() => setActiveTab("posts")}
                         style={[
                             styles.tabButton,
@@ -245,7 +309,7 @@ export default function ProfilePage() {
             {activeTab === "collections" ? (
                 <View style={styles.collectionsContainer}>
                     <FlashList
-                        data={[{ id: 'create-new', type: 'create' } as any, ...collections.map(c => ({ ...c, type: 'collection' }))]}
+                        data={[...(isViewingOther ? [] : [{ id: 'create-new', type: 'create' } as any]), ...collections.map(c => ({ ...c, type: 'collection' }))]}
                         renderItem={({ item }: any) => {
                             if (item.type === 'create') {
                                 return (
@@ -324,6 +388,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#1a1d23',
     },
+    profileLeftSectionOther: {
+        width: '60%',
+    },
     profileRightSection: {
         width: '30%',
         alignItems: "center",
@@ -396,6 +463,34 @@ const styles = StyleSheet.create({
         backgroundColor: '#7C6DFF',
         padding: 8,
         borderRadius: 20,
+    },
+    followIconButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+    },
+    followButton: {
+        position: 'absolute',
+        top: 50,
+        right: 2,
+        backgroundColor: '#7C6DFF',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+    },
+    followButtonRow: {
+        position: 'absolute',
+        top: 50,
+        right: 2,
+        backgroundColor: '#7C6DFF',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+    },
+    followButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
     profileContentTabs: {
         width: '100%',
