@@ -1,8 +1,10 @@
 using Google.Cloud.Firestore;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Backend.Services;
 using TheCuratorsCircle.Clients;
 using TheCuratorsCircle.Models.Content;
+using TheCuratorsCircle.Repositories;
 
 namespace TheCuratorsCircle.Controllers;
 
@@ -10,15 +12,29 @@ namespace TheCuratorsCircle.Controllers;
 [Route("collections")]
 public class CollectionsController : ControllerBase
 {
-    private readonly FirestoreClient _firestore;
+    private readonly ICollectionRepository _collectionRepository;
     private readonly ILogger<CollectionsController> _logger;
     private readonly APIHTTPClient _apiClient;
+    private readonly IUserProfileService _profileService;
 
-    public CollectionsController(FirestoreClient firestore, ILogger<CollectionsController> logger, APIHTTPClient apiClient)
+    public CollectionsController(ICollectionRepository collectionRepository, ILogger<CollectionsController> logger, APIHTTPClient apiClient, IUserProfileService profileService)
     {
-        _firestore = firestore;
+        _collectionRepository = collectionRepository;
         _logger = logger;
         _apiClient = apiClient;
+        _profileService = profileService;
+    }
+
+    private async Task<string> GetCurrentUserPersistentIdAsync()
+    {
+        var ownerUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(ownerUid))
+        {
+            return "test-user-id";
+        }
+
+        var profile = await _profileService.GetByOwnerUidAsync(ownerUid);
+        return profile?.PersistentId ?? ownerUid;
     }
 
     [HttpPost]
@@ -32,57 +48,42 @@ public class CollectionsController : ControllerBase
             return BadRequest(new { message = "Invalid data. Collection name is required." });
         }
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            userId = "test-user-id";
-        }
+        var persistentId = await GetCurrentUserPersistentIdAsync();
 
         try
         {
             var collection = new CollectionEntity
             {
                 Id = Guid.CreateVersion7().ToString(),
-                UserId = userId,
+                UserId = persistentId,
                 Name = request.Name.Trim(),
                 ItemIds = Array.Empty<string>(),
                 CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
             };
 
-            var collectionsRef = _firestore.Database.Collection("collections");
-            await collectionsRef.Document(collection.Id).SetAsync(collection);
+            var createdCollection = await _collectionRepository.CreateCollectionAsync(collection);
 
-            _logger.LogInformation("Collection created successfully - CollectionId: {CollectionId}, UserId: {UserId}", collection.Id, userId);
-            return Ok(collection);
+            _logger.LogInformation("Collection created successfully - CollectionId: {CollectionId}, UserId: {PersistentId}", collection.Id, persistentId);
+            return Ok(createdCollection);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating collection for user {UserId}", userId);
+            _logger.LogError(ex, "Error creating collection for user {PersistentId}", persistentId);
             return StatusCode(500, new { message = "Failed to create collection.", details = ex.Message });
         }
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetCollections()
+    public async Task<IActionResult> GetCollections([FromQuery] string? userId = null)
     {
-        _logger.LogInformation("GetCollections request received");
+        _logger.LogInformation("GetCollections request received - UserId filter: {UserId}", userId);
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            userId = "test-user-id";
-        }
+        var targetUserId = userId ?? await GetCurrentUserPersistentIdAsync();
 
         try
         {
-            var collectionsRef = _firestore.Database.Collection("collections");
-            
-            var snapshot = await collectionsRef
-                .WhereEqualTo("userId", userId)
-                .GetSnapshotAsync();
+            var collections = await _collectionRepository.GetCollectionsByUserIdAsync(targetUserId);
 
-            var collections = snapshot.Documents.Select(doc => doc.ConvertTo<CollectionEntity>()).ToList();
-            
             var orderedCollections = collections
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();
@@ -108,10 +109,9 @@ public class CollectionsController : ControllerBase
                     var firstPostId = collection.ItemIds[0];
                     try
                     {
-                        var postDoc = await _firestore.Database.Collection("posts").Document(firstPostId).GetSnapshotAsync();
-                        if (postDoc.Exists)
+                        var post = await _collectionRepository.GetPostByIdAsync(firstPostId);
+                        if (post != null)
                         {
-                            var post = postDoc.ConvertTo<Post>();
                             var mediaInfo = await _apiClient.FetchMediaByIdAsync(post.MediaId);
                             if (mediaInfo != null)
                             {
@@ -128,12 +128,12 @@ public class CollectionsController : ControllerBase
                 responses.Add(response);
             }
                 
-            _logger.LogInformation("GetCollections returning {Count} collections for user {UserId}", responses.Count, userId);
+            _logger.LogInformation("GetCollections returning {Count} collections for user {UserId}", responses.Count, targetUserId);
             return Ok(responses);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching collections for user {UserId}", userId);
+            _logger.LogError(ex, "Error fetching collections for user {UserId}", targetUserId);
             
             if (ex.Message.Contains("index"))
             {
@@ -149,28 +149,21 @@ public class CollectionsController : ControllerBase
     {
         _logger.LogInformation("GetCollection request received - CollectionId: {CollectionId}", collectionId);
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            userId = "test-user-id";
-        }
+        var persistentId = await GetCurrentUserPersistentIdAsync();
 
         try
         {
-            var docRef = _firestore.Database.Collection("collections").Document(collectionId);
-            var doc = await docRef.GetSnapshotAsync();
+            var collection = await _collectionRepository.GetCollectionByIdAsync(collectionId);
 
-            if (!doc.Exists)
+            if (collection == null)
             {
                 _logger.LogWarning("Collection not found - CollectionId: {CollectionId}", collectionId);
                 return NotFound(new { message = "Collection not found" });
             }
 
-            var collection = doc.ConvertTo<CollectionEntity>();
-
-            if (collection.UserId != userId)
+            if (collection.UserId != persistentId)
             {
-                _logger.LogWarning("Unauthorized access attempt - CollectionId: {CollectionId}, UserId: {UserId}", collectionId, userId);
+                _logger.LogWarning("Unauthorized access attempt - CollectionId: {CollectionId}, UserId: {PersistentId}", collectionId, persistentId);
                 return Forbid();
             }
 

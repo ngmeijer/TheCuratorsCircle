@@ -26,5 +26,6 @@ export interface CollectionDto {
     id: string;
     name: string;
     category: string;
+    userId: string;
     mediaData: Media[];
 }

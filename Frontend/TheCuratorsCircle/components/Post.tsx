@@ -6,8 +6,10 @@ import { getMediaById, MediaSearchResult } from '@/api/databaseClient';
 interface PostProps {
     item: PostDto;
     username?: string;
+    userId?: string;
     compact?: boolean;
     onPress?: () => void;
+    onUsernamePress?: (userId: string, username: string) => void;
 }
 
 function formatTimestamp(createdAt: string): string {
@@ -26,7 +28,7 @@ function formatTimestamp(createdAt: string): string {
     return date.toLocaleDateString();
 }
 
-export default function Post({ item, username, compact = false, onPress }: PostProps) {
+export default function Post({ item, username, userId, compact = false, onPress, onUsernamePress }: PostProps) {
     const { width } = useWindowDimensions();
     const [media, setMedia] = useState<MediaSearchResult | null>(null);
     const [loading, setLoading] = useState(true);
@@ -90,9 +92,17 @@ export default function Post({ item, username, compact = false, onPress }: PostP
                     <View style={compact ? styles.metaRowCompact : undefined}>
                         <View style={compact ? styles.usernameRowCompact : undefined}>
                             {username && (
-                                <Text style={compact ? styles.usernameCompact : styles.username} numberOfLines={1}>
-                                    {username}
-                                </Text>
+                                onUsernamePress && userId ? (
+                                    <Pressable onPress={() => onUsernamePress(userId, username)}>
+                                        <Text style={compact ? styles.usernameCompact : styles.username} numberOfLines={1}>
+                                            {username}
+                                        </Text>
+                                    </Pressable>
+                                ) : (
+                                    <Text style={compact ? styles.usernameCompact : styles.username} numberOfLines={1}>
+                                        {username}
+                                    </Text>
+                                )
                             )}
                             <Text style={compact ? styles.timestampCompact : styles.likeCount}>
                                 {formatTimestamp(item.createdAt)}
@@ -107,7 +117,15 @@ export default function Post({ item, username, compact = false, onPress }: PostP
             
             {!compact && (
                 <View style={styles.footer}>
-                    {username && <Text style={styles.username}>{username}</Text>}
+                    {username && (
+                        onUsernamePress && userId ? (
+                            <Pressable onPress={() => onUsernamePress(userId, username)}>
+                                <Text style={styles.username}>{username}</Text>
+                            </Pressable>
+                        ) : (
+                            <Text style={styles.username}>{username}</Text>
+                        )
+                    )}
                     <Text style={styles.mediaType}>{item.mediaType}</Text>
                     <Text style={styles.likeCount}>{item.likeCount} likes</Text>
                 </View>
