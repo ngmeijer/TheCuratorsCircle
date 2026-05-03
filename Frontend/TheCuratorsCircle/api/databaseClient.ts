@@ -431,40 +431,31 @@ export async function unfollowUser(targetUserId: string): Promise<any> {
     return response.json();
 }
 
-export async function getFollowingList(): Promise<any[]> {
-    console.log("Getting following list");
-    const response = await fetch(`${API_BASE_URL}/follows/me/following`, {
-        method: "GET",
-        headers: getHeaders()
-    });
-
+async function fetchFollowList(url: string, label: string): Promise<any[]> {
+    const response = await fetch(url, { method: "GET", headers: getHeaders() });
     if (!response.ok) {
         if (response.status === 401) return [];
         const errorBody = await response.text().catch(() => "");
-        throw new Error(`getFollowingList failed (${response.status}): ${errorBody || response.statusText}`);
+        throw new Error(`${label} failed (${response.status}): ${errorBody || response.statusText}`);
     }
-
     const data = await response.json();
-    // Backend returns { profiles, hasMore, nextCursor } — extract the array
     return Array.isArray(data) ? data : (data.profiles ?? []);
 }
 
-export async function getFollowersList(): Promise<any[]> {
-    console.log("Getting followers list");
-    const response = await fetch(`${API_BASE_URL}/follows/me/followers`, {
-        method: "GET",
-        headers: getHeaders()
-    });
+export async function getFollowingList(userId?: string): Promise<any[]> {
+    const url = userId
+        ? `${API_BASE_URL}/follows/${encodeURIComponent(userId)}/following`
+        : `${API_BASE_URL}/follows/me/following`;
+    console.log("Getting following list for", userId ?? "current user");
+    return fetchFollowList(url, "getFollowingList");
+}
 
-    if (!response.ok) {
-        if (response.status === 401) return [];
-        const errorBody = await response.text().catch(() => "");
-        throw new Error(`getFollowersList failed (${response.status}): ${errorBody || response.statusText}`);
-    }
-
-    const data = await response.json();
-    // Backend returns { profiles, hasMore, nextCursor } — extract the array
-    return Array.isArray(data) ? data : (data.profiles ?? []);
+export async function getFollowersList(userId?: string): Promise<any[]> {
+    const url = userId
+        ? `${API_BASE_URL}/follows/${encodeURIComponent(userId)}/followers`
+        : `${API_BASE_URL}/follows/me/followers`;
+    console.log("Getting followers list for", userId ?? "current user");
+    return fetchFollowList(url, "getFollowersList");
 }
 
 export async function getIsFollowing(userId: string): Promise<boolean> {

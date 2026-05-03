@@ -62,3 +62,7 @@ Backend/TheCuratorsCircle/TheCuratorsCircle.sln.DotSettings.user
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Vim swap files
+*.swp
+*.swo

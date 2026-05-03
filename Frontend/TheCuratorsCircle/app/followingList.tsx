@@ -37,8 +37,8 @@ export default function FollowingListPage() {
                 }
 
                 const data = isFollowersList
-                    ? await getFollowersList()
-                    : await getFollowingList();
+                    ? await getFollowersList(userId)
+                    : await getFollowingList(userId);
 
                 setUsers(data);
 
