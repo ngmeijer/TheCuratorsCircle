@@ -19,6 +19,7 @@ export default function FollowingListPage() {
     const { userId, type } = useLocalSearchParams<{ userId: string; type: string }>();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
 
@@ -28,16 +29,17 @@ export default function FollowingListPage() {
     useEffect(() => {
         async function loadData() {
             setLoading(true);
+            setError(null);
             try {
                 const currentUser = await getCurrentUserProfile();
                 if (currentUser) {
                     setCurrentUserId(currentUser.persistentId);
                 }
 
-                const data = isFollowersList 
-                    ? await getFollowersList()
-                    : await getFollowingList();
-                
+                const data = isFollowersList
+                    ? await getFollowersList(userId)
+                    : await getFollowingList(userId);
+
                 setUsers(data);
 
                 // Check follow status for each user
@@ -51,7 +53,9 @@ export default function FollowingListPage() {
                 }
                 setFollowingStatus(status);
             } catch (err) {
-                console.error('Error loading list:', err);
+                const message = err instanceof Error ? err.message : String(err);
+                console.error('Error loading list:', message);
+                setError(message);
             } finally {
                 setLoading(false);
             }
@@ -117,6 +121,8 @@ export default function FollowingListPage() {
 
             {loading ? (
                 <ActivityIndicator size="large" color="#fff" />
+            ) : error ? (
+                <Text style={styles.errorText}>{error}</Text>
             ) : (
                 <FlatList
                     data={users}
@@ -205,5 +211,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         textAlign: 'center',
         marginTop: 40,
+    },
+    errorText: {
+        color: '#f87171',
+        fontSize: 14,
+        textAlign: 'center',
+        marginTop: 40,
+        paddingHorizontal: 24,
     },
 });

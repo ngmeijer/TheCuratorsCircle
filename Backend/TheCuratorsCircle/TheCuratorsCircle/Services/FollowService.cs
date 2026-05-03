@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Google.Cloud.Firestore;
 using Backend.Models.Follows;
 using Backend.Models.Profiles;
+using TheCuratorsCircle.Models;
 
 namespace Backend.Services
 {
@@ -14,6 +15,8 @@ namespace Backend.Services
     Task<bool> IsFollowingAsync(string followerId, string followingId);
     Task<List<UserProfile>> GetFollowingAsync(string followerId);
     Task<List<UserProfile>> GetFollowersAsync(string userId);
+    Task<PagedResult<UserProfile>> GetFollowingPagedAsync(string followerId, string? startAfter, int limit);
+    Task<PagedResult<UserProfile>> GetFollowersPagedAsync(string userId, string? startAfter, int limit);
     Task<int> GetFollowingCountAsync(string userId);
     Task<int> GetFollowersCountAsync(string userId);
   }
@@ -76,17 +79,7 @@ namespace Backend.Services
           .WhereEqualTo("followerId", followerId)
           .GetSnapshotAsync();
 
-      var followingProfiles = new List<UserProfile>();
-      
-      foreach (var doc in snapshot.Documents)
-      {
-        var follow = doc.ConvertTo<Follow>();
-        var profile = await GetProfileByIdAsync(follow.FollowingId);
-        if (profile != null)
-          followingProfiles.Add(profile);
-      }
-
-      return followingProfiles;
+      return await BatchGetProfilesAsync(snapshot.Documents.Select(d => d.ConvertTo<Follow>().FollowingId));
     }
 
     public async Task<List<UserProfile>> GetFollowersAsync(string userId)
@@ -95,17 +88,47 @@ namespace Backend.Services
           .WhereEqualTo("followingId", userId)
           .GetSnapshotAsync();
 
-      var followerProfiles = new List<UserProfile>();
-      
-      foreach (var doc in snapshot.Documents)
-      {
-        var follow = doc.ConvertTo<Follow>();
-        var profile = await GetProfileByIdAsync(follow.FollowerId);
-        if (profile != null)
-          followerProfiles.Add(profile);
-      }
+      return await BatchGetProfilesAsync(snapshot.Documents.Select(d => d.ConvertTo<Follow>().FollowerId));
+    }
 
-      return followerProfiles;
+    public async Task<PagedResult<UserProfile>> GetFollowingPagedAsync(string followerId, string? startAfter, int limit)
+    {
+      var docs = await QueryFollowsPagedAsync("followerId", followerId, startAfter, limit);
+      var profiles = await BatchGetProfilesAsync(docs.Take(limit).Select(d => d.ConvertTo<Follow>().FollowingId));
+      var hasMore = docs.Count > limit;
+      return new PagedResult<UserProfile>
+      {
+        Items = profiles,
+        HasMore = hasMore,
+        NextCursor = hasMore ? docs[limit - 1].ConvertTo<Follow>().CreatedAt.ToString("o") : null
+      };
+    }
+
+    public async Task<PagedResult<UserProfile>> GetFollowersPagedAsync(string userId, string? startAfter, int limit)
+    {
+      var docs = await QueryFollowsPagedAsync("followingId", userId, startAfter, limit);
+      var profiles = await BatchGetProfilesAsync(docs.Take(limit).Select(d => d.ConvertTo<Follow>().FollowerId));
+      var hasMore = docs.Count > limit;
+      return new PagedResult<UserProfile>
+      {
+        Items = profiles,
+        HasMore = hasMore,
+        NextCursor = hasMore ? docs[limit - 1].ConvertTo<Follow>().CreatedAt.ToString("o") : null
+      };
+    }
+
+    private async Task<List<DocumentSnapshot>> QueryFollowsPagedAsync(string field, string value, string? startAfter, int limit)
+    {
+      var baseQuery = _db.Collection("follows")
+          .WhereEqualTo(field, value)
+          .OrderByDescending("createdAt");
+
+      var query = string.IsNullOrEmpty(startAfter)
+          ? baseQuery.Limit(limit + 1)
+          : baseQuery.WhereLessThan("createdAt", DateTime.Parse(startAfter)).Limit(limit + 1);
+
+      var snapshot = await query.GetSnapshotAsync();
+      return snapshot.Documents.ToList();
     }
 
     public async Task<int> GetFollowingCountAsync(string userId)
@@ -124,13 +147,14 @@ namespace Backend.Services
       return snapshot.Documents.Count;
     }
 
-    private async Task<UserProfile> GetProfileByIdAsync(string persistentId)
+    private async Task<List<UserProfile>> BatchGetProfilesAsync(IEnumerable<string> profileIds)
     {
-      var docRef = _db.Collection("userProfiles").Document(persistentId);
-      var snap = await docRef.GetSnapshotAsync();
-      
-      if (!snap.Exists) return null;
-      return snap.ConvertTo<UserProfile>();
+      var ids = profileIds.Distinct().ToList();
+      if (ids.Count == 0) return new List<UserProfile>();
+
+      var docRefs = ids.Select(id => _db.Collection("userProfiles").Document(id)).ToList();
+      var snapshots = await _db.GetAllSnapshotsAsync(docRefs);
+      return snapshots.Where(s => s.Exists).Select(s => s.ConvertTo<UserProfile>()).ToList();
     }
   }
 }

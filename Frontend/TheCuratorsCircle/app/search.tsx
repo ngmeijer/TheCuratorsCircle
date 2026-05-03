@@ -19,6 +19,7 @@ export default function SearchPage() {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -38,12 +39,15 @@ export default function SearchPage() {
 
     const handleSearch = useCallback(async () => {
         if (!query || query.length < 2) return;
-        
+
         setLoading(true);
+        setError(null);
+        console.log('[Search] Searching for:', query);
         try {
             const users = await searchUsers(query);
+            console.log('[Search] Got', users.length, 'results:', users);
             setResults(users);
-            
+
             // Check follow status for each user
             const status: Record<string, boolean> = {};
             for (const user of users) {
@@ -55,7 +59,9 @@ export default function SearchPage() {
             }
             setFollowingStatus(status);
         } catch (err) {
-            console.error('Search error:', err);
+            const message = err instanceof Error ? err.message : String(err);
+            console.error('[Search] Error:', message);
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -138,6 +144,8 @@ export default function SearchPage() {
 
             {loading ? (
                 <ActivityIndicator size="large" color="#fff" style={styles.loader} />
+            ) : error ? (
+                <Text style={styles.errorText}>{error}</Text>
             ) : (
                 <FlatList
                     data={results}
@@ -272,5 +280,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
         marginTop: 40,
+    },
+    errorText: {
+        color: '#f87171',
+        fontSize: 14,
+        textAlign: 'center',
+        marginTop: 40,
+        paddingHorizontal: 24,
     },
 });

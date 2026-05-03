@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Backend.Services;
+using TheCuratorsCircle.Models;
 
 namespace TheCuratorsCircle.Controllers;
 
@@ -64,30 +65,39 @@ public class FollowsController : ControllerBase
     }
 
     [HttpGet("me/following")]
-    public async Task<IActionResult> GetFollowing()
+    public async Task<IActionResult> GetFollowing([FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
-        if (currentProfile == null)
-            return Unauthorized(new { error = "Profile not found" });
+        if (currentProfile == null) return Unauthorized(new { error = "Profile not found" });
 
-        var following = await _followService.GetFollowingAsync(currentProfile.PersistentId);
-        return Ok(following);
+        return Ok(ToPagedResponse(await _followService.GetFollowingPagedAsync(currentProfile.PersistentId, startAfter, limit)));
     }
 
     [HttpGet("me/followers")]
-    public async Task<IActionResult> GetFollowers()
+    public async Task<IActionResult> GetFollowers([FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
-        if (currentProfile == null)
-            return Unauthorized(new { error = "Profile not found" });
+        if (currentProfile == null) return Unauthorized(new { error = "Profile not found" });
 
-        var followers = await _followService.GetFollowersAsync(currentProfile.PersistentId);
-        return Ok(followers);
+        return Ok(ToPagedResponse(await _followService.GetFollowersPagedAsync(currentProfile.PersistentId, startAfter, limit)));
     }
+
+    [HttpGet("{userId}/following")]
+    public async Task<IActionResult> GetFollowingForUser(string userId, [FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
+    {
+        return Ok(ToPagedResponse(await _followService.GetFollowingPagedAsync(userId, startAfter, limit)));
+    }
+
+    [HttpGet("{userId}/followers")]
+    public async Task<IActionResult> GetFollowersForUser(string userId, [FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
+    {
+        return Ok(ToPagedResponse(await _followService.GetFollowersPagedAsync(userId, startAfter, limit)));
+    }
+
+    private static object ToPagedResponse<T>(PagedResult<T> result) =>
+        new { profiles = result.Items, hasMore = result.HasMore, nextCursor = result.NextCursor };
 
     [HttpGet("{userId}/following-count")]
     public async Task<IActionResult> GetFollowingCount(string userId)

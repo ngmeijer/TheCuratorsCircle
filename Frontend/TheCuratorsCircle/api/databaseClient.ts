@@ -3,6 +3,8 @@ import { API_BASE_URL } from "./config";
 
 let authToken: string | null = null;
 
+const mediaCache = new Map<string, MediaSearchResult>();
+
 export function setAuthToken(token: string | null) {
     authToken = token;
 }
@@ -39,7 +41,7 @@ export async function getCollections() {
 }
 
 export async function getCollectionsByUserId(userId: string) {
-    const response = await fetch(`http://${ipadress}:5044/collections?userId=${encodeURIComponent(userId)}`, {
+    const response = await fetch(`${API_BASE_URL}/collections?userId=${encodeURIComponent(userId)}`, {
         method: "GET",
         headers: getHeaders()
     });
@@ -112,9 +114,10 @@ export async function createCollection(payload: CreateCollectionPayload) {
     return receivedData;
 }
 
-export async function getPosts() {
-    console.log("Getting posts from backend");
-    const response = await fetch(`${API_BASE_URL}/posts`, {
+export async function getPosts(userId?: string) {
+    const url = userId ? `${API_BASE_URL}/posts?userId=${encodeURIComponent(userId)}` : `${API_BASE_URL}/posts`;
+    console.log("Getting posts from backend", userId ? `for user ${userId}` : '(all)');
+    const response = await fetch(url, {
         method: "GET",
         headers: getHeaders()
     });
@@ -193,6 +196,9 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
 }
 
 export async function getMediaById(id: string, mediaType: string = 'movie'): Promise<MediaSearchResult | null> {
+    const cacheKey = `${mediaType}:${id}`;
+    if (mediaCache.has(cacheKey)) return mediaCache.get(cacheKey)!;
+
     console.log("Getting media by ID:", id, mediaType);
     const response = await fetch(`${API_BASE_URL}/media/media?id=${encodeURIComponent(id)}&mediaType=${encodeURIComponent(mediaType)}`, {
         method: "GET",
@@ -205,6 +211,7 @@ export async function getMediaById(id: string, mediaType: string = 'movie'): Pro
     }
 
     const receivedData = await response.json();
+    if (receivedData) mediaCache.set(cacheKey, receivedData);
     return receivedData;
 }
 
@@ -424,34 +431,31 @@ export async function unfollowUser(targetUserId: string): Promise<any> {
     return response.json();
 }
 
-export async function getFollowingList(): Promise<any[]> {
-    console.log("Getting following list");
-    const response = await fetch(`${API_BASE_URL}/follows/me/following`, {
-        method: "GET",
-        headers: getHeaders()
-    });
-
+async function fetchFollowList(url: string, label: string): Promise<any[]> {
+    const response = await fetch(url, { method: "GET", headers: getHeaders() });
     if (!response.ok) {
         if (response.status === 401) return [];
-        throw new Error(`Error ${response.status}`);
+        const errorBody = await response.text().catch(() => "");
+        throw new Error(`${label} failed (${response.status}): ${errorBody || response.statusText}`);
     }
-
-    return response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data : (data.profiles ?? []);
 }
 
-export async function getFollowersList(): Promise<any[]> {
-    console.log("Getting followers list");
-    const response = await fetch(`${API_BASE_URL}/follows/me/followers`, {
-        method: "GET",
-        headers: getHeaders()
-    });
+export async function getFollowingList(userId?: string): Promise<any[]> {
+    const url = userId
+        ? `${API_BASE_URL}/follows/${encodeURIComponent(userId)}/following`
+        : `${API_BASE_URL}/follows/me/following`;
+    console.log("Getting following list for", userId ?? "current user");
+    return fetchFollowList(url, "getFollowingList");
+}
 
-    if (!response.ok) {
-        if (response.status === 401) return [];
-        throw new Error(`Error ${response.status}`);
-    }
-
-    return response.json();
+export async function getFollowersList(userId?: string): Promise<any[]> {
+    const url = userId
+        ? `${API_BASE_URL}/follows/${encodeURIComponent(userId)}/followers`
+        : `${API_BASE_URL}/follows/me/followers`;
+    console.log("Getting followers list for", userId ?? "current user");
+    return fetchFollowList(url, "getFollowersList");
 }
 
 export async function getIsFollowing(userId: string): Promise<boolean> {

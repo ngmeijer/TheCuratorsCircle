@@ -113,13 +113,16 @@ public class PostsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPosts()
+    public async Task<IActionResult> GetPosts([FromQuery] string? userId = null)
     {
-        _logger.LogInformation("GetPosts request received");
-        
-        var postsRef = _firestore.Database.Collection("posts");
-        var snapshot = await postsRef.OrderByDescending("createdAt").Limit(50).GetSnapshotAsync();
-        
+        _logger.LogInformation("GetPosts request received - UserId filter: {UserId}", userId ?? "none");
+
+        var query = _firestore.Database.Collection("posts").OrderByDescending("createdAt").Limit(50);
+
+        if (!string.IsNullOrEmpty(userId))
+            query = query.WhereEqualTo("userId", userId);
+
+        var snapshot = await query.GetSnapshotAsync();
         var posts = snapshot.Documents.Select(doc => doc.ConvertTo<Post>()).ToList();
         _logger.LogInformation("GetPosts returning {Count} posts", posts.Count);
         return Ok(posts);
@@ -181,17 +184,11 @@ public class PostsController : ControllerBase
 
             // Batch fetch all relevant profiles
             var userIds = posts.Select(p => p.UserId).Distinct().ToList();
-            var profilesDict = new Dictionary<string, UserProfile>();
-
-            foreach (var userId in userIds)
-            {
-                var profileDoc = await _firestore.Database.Collection("userProfiles").Document(userId).GetSnapshotAsync();
-                if (profileDoc.Exists)
-                {
-                    var profile = profileDoc.ConvertTo<UserProfile>();
-                    profilesDict[userId] = profile;
-                }
-            }
+            var docRefs = userIds.Select(id => _firestore.Database.Collection("userProfiles").Document(id)).ToList();
+            var snapshots = await _firestore.Database.GetAllSnapshotsAsync(docRefs);
+            var profilesDict = snapshots
+                .Where(s => s.Exists)
+                .ToDictionary(s => s.Id, s => s.ConvertTo<UserProfile>());
 
             var postsWithProfiles = posts.Select(post => new PostWithProfile
             {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Google.Cloud.Firestore;
+using Microsoft.Extensions.Logging;
 using Backend.Models.Profiles;
 
 namespace Backend.Services
@@ -19,10 +20,12 @@ namespace Backend.Services
   public class UserProfileService : IUserProfileService
   {
     private readonly FirestoreDb _db;
+    private readonly ILogger<UserProfileService> _logger;
 
-    public UserProfileService(FirestoreDb db)
+    public UserProfileService(FirestoreDb db, ILogger<UserProfileService> logger)
     {
       _db = db;
+      _logger = logger;
     }
 
     public async Task<UserProfile> GetByPersistentIdAsync(string persistentId)
@@ -88,6 +91,7 @@ namespace Backend.Services
         PersistentId = persistentId,
         OwnerUid = ownerUid,
         UsernamesHistory = new List<string> { username },
+        UsernameLower = username.TrimStart('@').ToLowerInvariant(),
         DisplayName = request.DisplayName ?? "",
         Bio = request.Bio ?? "",
         IsPublic = true,
@@ -153,6 +157,7 @@ namespace Backend.Services
             newHistory.Add(oldUsername);
         }
         updates["UsernamesHistory"] = newHistory;
+        updates["UsernameLower"] = request.Username.TrimStart('@').ToLowerInvariant();
 
         // Create new alias mapping
         await newAliasRef.SetAsync(new AliasMapping
@@ -194,28 +199,22 @@ namespace Backend.Services
       if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
         return new List<UserProfile>();
 
+      var normalized = query.TrimStart('@').ToLowerInvariant();
+      _logger.LogInformation("SearchByUsername: query='{Query}', normalized='{Normalized}'", query, normalized);
+      var upperBound = normalized + "";
+
       var snapshot = await _db.Collection("userProfiles")
+          .WhereGreaterThanOrEqualTo("UsernameLower", normalized)
+          .WhereLessThanOrEqualTo("UsernameLower", upperBound)
           .Limit(20)
           .GetSnapshotAsync();
 
-      var results = new List<UserProfile>();
-      var queryLower = query.ToLower();
+      _logger.LogInformation("SearchByUsername: Firestore returned {Count} documents", snapshot.Documents.Count);
 
-      foreach (var doc in snapshot.Documents)
-      {
-        var profile = doc.ConvertTo<UserProfile>();
-        if (profile.UsernamesHistory != null)
-        {
-          foreach (var username in profile.UsernamesHistory)
-          {
-            if (!string.IsNullOrEmpty(username) && username.ToLower().Contains(queryLower))
-            {
-              results.Add(profile);
-              break;
-            }
-          }
-        }
-      }
+      var results = snapshot.Documents.Select(d => d.ConvertTo<UserProfile>()).ToList();
+
+      foreach (var r in results)
+        _logger.LogInformation("SearchByUsername: found profile PersistentId={Id}, UsernameLower='{UsernameLower}'", r.PersistentId, r.UsernameLower);
 
       return results;
     }
