@@ -57,15 +57,17 @@ export function useUserProfile(alias?: string, userId?: string) {
     return { profile, loading, error, refresh: loadProfile };
 }
 
-export function useProfilePosts() {
+export function useProfilePosts(userId?: string) {
     const [posts, setPosts] = useState<PostDto[]>([]);
     const [loadingPosts, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!userId) return;
+
         async function loadPosts() {
             setLoading(true);
             try {
-                const posts = await getPosts();
+                const posts = await getPosts(userId);
                 setPosts(posts);
             } catch (err) {
                 console.error(err);
@@ -75,7 +77,7 @@ export function useProfilePosts() {
         }
 
         loadPosts();
-    }, []);
+    }, [userId]);
 
     return { posts, loadingPosts };
 }
@@ -194,7 +196,7 @@ export default function ProfilePage() {
     const params = useLocalSearchParams<{ alias?: string; userId?: string }>();
     const isViewingOther = !!params.alias || !!params.userId;
     const { profile, loading: loadingProfile, error: profileError, refresh: refreshProfile } = useUserProfile(params.alias, params.userId);
-    const { posts, loadingPosts } = useProfilePosts();
+    const { posts, loadingPosts } = useProfilePosts(profile?.persistentId);
     const collectionsUserId = isViewingOther ? profile?.persistentId : undefined;
     const { collections, loadingCollections, refreshCollections } = useProfileCollections(collectionsUserId);
     const { followingCount, followersCount } = useFollowCounts(profile?.persistentId || null);

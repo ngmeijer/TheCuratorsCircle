@@ -114,9 +114,10 @@ export async function createCollection(payload: CreateCollectionPayload) {
     return receivedData;
 }
 
-export async function getPosts() {
-    console.log("Getting posts from backend");
-    const response = await fetch(`${API_BASE_URL}/posts`, {
+export async function getPosts(userId?: string) {
+    const url = userId ? `${API_BASE_URL}/posts?userId=${encodeURIComponent(userId)}` : `${API_BASE_URL}/posts`;
+    console.log("Getting posts from backend", userId ? `for user ${userId}` : '(all)');
+    const response = await fetch(url, {
         method: "GET",
         headers: getHeaders()
     });

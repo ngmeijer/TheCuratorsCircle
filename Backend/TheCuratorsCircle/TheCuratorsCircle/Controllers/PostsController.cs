@@ -113,13 +113,16 @@ public class PostsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPosts()
+    public async Task<IActionResult> GetPosts([FromQuery] string? userId = null)
     {
-        _logger.LogInformation("GetPosts request received");
-        
-        var postsRef = _firestore.Database.Collection("posts");
-        var snapshot = await postsRef.OrderByDescending("createdAt").Limit(50).GetSnapshotAsync();
-        
+        _logger.LogInformation("GetPosts request received - UserId filter: {UserId}", userId ?? "none");
+
+        var query = _firestore.Database.Collection("posts").OrderByDescending("createdAt").Limit(50);
+
+        if (!string.IsNullOrEmpty(userId))
+            query = query.WhereEqualTo("userId", userId);
+
+        var snapshot = await query.GetSnapshotAsync();
         var posts = snapshot.Documents.Select(doc => doc.ConvertTo<Post>()).ToList();
         _logger.LogInformation("GetPosts returning {Count} posts", posts.Count);
         return Ok(posts);
