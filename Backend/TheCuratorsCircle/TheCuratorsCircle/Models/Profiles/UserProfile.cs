@@ -23,6 +23,9 @@ namespace Backend.Models.Profiles
     public string Bio { get; set; }
 
     [FirestoreProperty]
+    public string UsernameLower { get; set; } = "";
+
+    [FirestoreProperty]
     public bool IsPublic { get; set; } = true;
 
     [FirestoreProperty]

@@ -64,29 +64,27 @@ public class FollowsController : ControllerBase
     }
 
     [HttpGet("me/following")]
-    public async Task<IActionResult> GetFollowing()
+    public async Task<IActionResult> GetFollowing([FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
+
         if (currentProfile == null)
             return Unauthorized(new { error = "Profile not found" });
 
-        var following = await _followService.GetFollowingAsync(currentProfile.PersistentId);
-        return Ok(following);
+        return Ok(await _followService.GetFollowingPagedAsync(currentProfile.PersistentId, startAfter, limit));
     }
 
     [HttpGet("me/followers")]
-    public async Task<IActionResult> GetFollowers()
+    public async Task<IActionResult> GetFollowers([FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
+
         if (currentProfile == null)
             return Unauthorized(new { error = "Profile not found" });
 
-        var followers = await _followService.GetFollowersAsync(currentProfile.PersistentId);
-        return Ok(followers);
+        return Ok(await _followService.GetFollowersPagedAsync(currentProfile.PersistentId, startAfter, limit));
     }
 
     [HttpGet("{userId}/following-count")]

@@ -181,17 +181,11 @@ public class PostsController : ControllerBase
 
             // Batch fetch all relevant profiles
             var userIds = posts.Select(p => p.UserId).Distinct().ToList();
-            var profilesDict = new Dictionary<string, UserProfile>();
-
-            foreach (var userId in userIds)
-            {
-                var profileDoc = await _firestore.Database.Collection("userProfiles").Document(userId).GetSnapshotAsync();
-                if (profileDoc.Exists)
-                {
-                    var profile = profileDoc.ConvertTo<UserProfile>();
-                    profilesDict[userId] = profile;
-                }
-            }
+            var docRefs = userIds.Select(id => _firestore.Database.Collection("userProfiles").Document(id)).ToList();
+            var snapshots = await _firestore.Database.GetAllSnapshotsAsync(docRefs);
+            var profilesDict = snapshots
+                .Where(s => s.Exists)
+                .ToDictionary(s => s.Id, s => s.ConvertTo<UserProfile>());
 
             var postsWithProfiles = posts.Select(post => new PostWithProfile
             {

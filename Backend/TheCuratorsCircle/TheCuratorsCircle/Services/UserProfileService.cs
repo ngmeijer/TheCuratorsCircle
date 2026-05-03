@@ -88,6 +88,7 @@ namespace Backend.Services
         PersistentId = persistentId,
         OwnerUid = ownerUid,
         UsernamesHistory = new List<string> { username },
+        UsernameLower = username.ToLowerInvariant(),
         DisplayName = request.DisplayName ?? "",
         Bio = request.Bio ?? "",
         IsPublic = true,
@@ -153,6 +154,7 @@ namespace Backend.Services
             newHistory.Add(oldUsername);
         }
         updates["UsernamesHistory"] = newHistory;
+        updates["UsernameLower"] = request.Username.ToLowerInvariant();
 
         // Create new alias mapping
         await newAliasRef.SetAsync(new AliasMapping
@@ -194,30 +196,16 @@ namespace Backend.Services
       if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
         return new List<UserProfile>();
 
+      var normalized = query.ToLowerInvariant();
+      var upperBound = normalized + "";
+
       var snapshot = await _db.Collection("userProfiles")
+          .WhereGreaterThanOrEqualTo("UsernameLower", normalized)
+          .WhereLessThanOrEqualTo("UsernameLower", upperBound)
           .Limit(20)
           .GetSnapshotAsync();
 
-      var results = new List<UserProfile>();
-      var queryLower = query.ToLower();
-
-      foreach (var doc in snapshot.Documents)
-      {
-        var profile = doc.ConvertTo<UserProfile>();
-        if (profile.UsernamesHistory != null)
-        {
-          foreach (var username in profile.UsernamesHistory)
-          {
-            if (!string.IsNullOrEmpty(username) && username.ToLower().Contains(queryLower))
-            {
-              results.Add(profile);
-              break;
-            }
-          }
-        }
-      }
-
-      return results;
+      return snapshot.Documents.Select(d => d.ConvertTo<UserProfile>()).ToList();
     }
   }
 }

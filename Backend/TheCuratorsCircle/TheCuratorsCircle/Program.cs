@@ -39,10 +39,10 @@ builder.Services.AddSingleton<IUserProfileService, UserProfileService>();
 builder.Services.AddSingleton<IFollowService, FollowService>();
 builder.Services.AddSingleton<ICollectionRepository, FirestoreCollectionRepository>();
 
-builder.Services.AddHttpClient<APIHTTPClient>();
-builder.Services.AddHttpClient<RawgClient>();
-builder.Services.AddHttpClient<OmdbSearchProvider>();
-builder.Services.AddHttpClient<RawgSearchProvider>();
+builder.Services.AddHttpClient<APIHTTPClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<RawgClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<OmdbSearchProvider>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<RawgSearchProvider>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddSingleton<OmdbSearchProvider>();
 builder.Services.AddSingleton<RawgSearchProvider>();
 builder.Services.AddSingleton<MediaSearchProviderFactory>();

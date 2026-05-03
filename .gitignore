@@ -59,3 +59,6 @@ Backend/TheCuratorsCircle/TheCuratorsCircle/firebase_creds.json
 Frontend/TheCuratorsCircle/firebase_creds.json
 Backend/TheCuratorsCircle/TheCuratorsCircle/credentials.json
 Backend/TheCuratorsCircle/TheCuratorsCircle.sln.DotSettings.user
+
+# Claude Code local settings
+.claude/settings.local.json

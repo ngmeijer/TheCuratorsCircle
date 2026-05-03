@@ -28,18 +28,6 @@ public class CollectionsController : ControllerBase
         _profileService = profileService;
     }
 
-    private async Task<string> GetCurrentUserPersistentIdAsync()
-    {
-        var ownerUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(ownerUid))
-        {
-            return "test-user-id";
-        }
-
-        var profile = await _profileService.GetByOwnerUidAsync(ownerUid);
-        return profile?.PersistentId ?? ownerUid;
-    }
-
     [HttpPost]
     [EnableRateLimiting("write")]
     public async Task<IActionResult> CreateCollection([FromBody] CreateCollectionRequest request)
@@ -52,8 +40,12 @@ public class CollectionsController : ControllerBase
             return BadRequest(new { message = "Invalid data. Collection name is required." });
         }
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(ownerUid))
+            return Unauthorized();
+
+        var profile = await _profileService.GetByOwnerUidAsync(ownerUid);
+        if (profile == null)
             return Unauthorized();
 
         try
@@ -61,7 +53,7 @@ public class CollectionsController : ControllerBase
             var collection = new CollectionEntity
             {
                 Id = Guid.CreateVersion7().ToString(),
-                UserId = persistentId,
+                UserId = profile.PersistentId,
                 Name = request.Name.Trim(),
                 ItemIds = Array.Empty<string>(),
                 CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
@@ -69,12 +61,12 @@ public class CollectionsController : ControllerBase
 
             var createdCollection = await _collectionRepository.CreateCollectionAsync(collection);
 
-            _logger.LogInformation("Collection created successfully - CollectionId: {CollectionId}, UserId: {PersistentId}", collection.Id, persistentId);
+            _logger.LogInformation("Collection created successfully - CollectionId: {CollectionId}, UserId: {PersistentId}", collection.Id, profile.PersistentId);
             return Ok(createdCollection);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating collection for user {PersistentId}", persistentId);
+            _logger.LogError(ex, "Error creating collection for user {PersistentId}", profile.PersistentId);
             return StatusCode(500, new { message = "Failed to create collection.", details = ex.Message });
         }
     }
@@ -82,11 +74,24 @@ public class CollectionsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCollections([FromQuery] string? userId = null)
     {
-        _logger.LogInformation("GetCollections request received - UserId filter: {UserId}", userId);
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(ownerUid))
             return Unauthorized();
+
+        string targetUserId;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            targetUserId = userId;
+        }
+        else
+        {
+            var profile = await _profileService.GetByOwnerUidAsync(ownerUid);
+            if (profile == null)
+                return Unauthorized();
+            targetUserId = profile.PersistentId;
+        }
+
+        _logger.LogInformation("GetCollections request received - UserId filter: {UserId}", targetUserId);
 
         try
         {
@@ -96,9 +101,8 @@ public class CollectionsController : ControllerBase
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();
 
-            // Fetch posts for each collection to get poster info
             var responses = new List<CollectionResponse>();
-            
+
             foreach (var collection in orderedCollections)
             {
                 var response = new CollectionResponse
@@ -111,7 +115,6 @@ public class CollectionsController : ControllerBase
                     ItemCount = collection.ItemIds?.Length ?? 0
                 };
 
-                // Get first post's media for poster
                 if (collection.ItemIds != null && collection.ItemIds.Length > 0)
                 {
                     var firstPostId = collection.ItemIds[0];
@@ -122,9 +125,7 @@ public class CollectionsController : ControllerBase
                         {
                             var mediaInfo = await _apiClient.FetchMediaByIdAsync(post.MediaId);
                             if (mediaInfo != null)
-                            {
                                 response.PosterUrl = mediaInfo.Poster;
-                            }
                         }
                     }
                     catch (Exception ex)
@@ -135,19 +136,17 @@ public class CollectionsController : ControllerBase
 
                 responses.Add(response);
             }
-                
+
             _logger.LogInformation("GetCollections returning {Count} collections for user {UserId}", responses.Count, targetUserId);
             return Ok(responses);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching collections for user {UserId}", targetUserId);
-            
+
             if (ex.Message.Contains("index"))
-            {
                 return StatusCode(500, new { message = "Database index error. Please try again later.", details = ex.Message });
-            }
-            
+
             return StatusCode(500, new { message = "Failed to retrieve collections.", details = ex.Message });
         }
     }
@@ -157,8 +156,12 @@ public class CollectionsController : ControllerBase
     {
         _logger.LogInformation("GetCollection request received - CollectionId: {CollectionId}", collectionId);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(ownerUid))
+            return Unauthorized();
+
+        var profile = await _profileService.GetByOwnerUidAsync(ownerUid);
+        if (profile == null)
             return Unauthorized();
 
         try
@@ -171,9 +174,9 @@ public class CollectionsController : ControllerBase
                 return NotFound(new { message = "Collection not found" });
             }
 
-            if (collection.UserId != persistentId)
+            if (collection.UserId != profile.PersistentId)
             {
-                _logger.LogWarning("Unauthorized access attempt - CollectionId: {CollectionId}, UserId: {PersistentId}", collectionId, persistentId);
+                _logger.LogWarning("Unauthorized access attempt - CollectionId: {CollectionId}, UserId: {PersistentId}", collectionId, profile.PersistentId);
                 return Forbid();
             }
 
