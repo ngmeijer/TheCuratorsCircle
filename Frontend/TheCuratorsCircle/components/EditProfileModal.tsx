@@ -14,6 +14,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { updateUserProfile, createUserProfile, UpdateUserProfilePayload } from '@/api/databaseClient';
 import { UserProfileDto } from '@/DTOs/UserProfileDto';
+import { MAX_USERNAME_LENGTH, MAX_DISPLAY_NAME_LENGTH, MAX_BIO_LENGTH } from '@/api/constants';
 
 interface EditProfileModalProps {
     visible: boolean;
@@ -50,6 +51,11 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
     const handleSave = async () => {
         if (!username.trim()) {
             setError('Username is required');
+            return;
+        }
+
+        if (!/^\w+$/.test(username.trim())) {
+            setError('Username can only contain letters, numbers, or underscores');
             return;
         }
 
@@ -121,7 +127,7 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
                                     setUsername(cleaned);
                                     setError('');
                                 }}
-                                maxLength={29}
+                                maxLength={MAX_USERNAME_LENGTH - 1}
                                 autoCapitalize="none"
                             />
                         </View>
@@ -136,7 +142,7 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
                                 setDisplayName(text);
                                 setError('');
                             }}
-                            maxLength={50}
+                            maxLength={MAX_DISPLAY_NAME_LENGTH}
                         />
 
                         <Text style={styles.label}>Bio</Text>
@@ -149,7 +155,7 @@ export default function EditProfileModal({ visible, profile, onClose, onSuccess 
                                 setBio(text);
                                 setError('');
                             }}
-                            maxLength={500}
+                            maxLength={MAX_BIO_LENGTH}
                             multiline
                             numberOfLines={4}
                             textAlignVertical="top"

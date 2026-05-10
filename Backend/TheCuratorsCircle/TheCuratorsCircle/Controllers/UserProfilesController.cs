@@ -97,7 +97,7 @@ public class UserProfilesController : ControllerBase
     {
         _logger.LogInformation("Search called with query: '{Query}'", q);
 
-        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+        if (string.IsNullOrWhiteSpace(q) || q.Length < AppConstants.MinSearchQueryLength)
         {
             _logger.LogInformation("Search query too short, returning empty");
             return Ok(new List<UserProfile>());

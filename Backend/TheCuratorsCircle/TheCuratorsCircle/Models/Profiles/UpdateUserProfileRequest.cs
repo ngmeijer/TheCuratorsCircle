@@ -1,21 +1,19 @@
-using System;
-using Google.Cloud.Firestore;
+using System.ComponentModel.DataAnnotations;
+using TheCuratorsCircle;
 
-namespace Backend.Models.Profiles
+namespace Backend.Models.Profiles;
+
+public class UpdateUserProfileRequest
 {
-  [FirestoreData]
-  public class UpdateUserProfileRequest
-  {
-    [FirestoreProperty]
+    [StringLength(AppConstants.MaxUsernameLength)]
+    [RegularExpression(@"^@\w+$", ErrorMessage = "Username must start with @ and contain only letters, numbers, or underscores.")]
     public string? Username { get; set; }
 
-    [FirestoreProperty]
+    [StringLength(AppConstants.MaxDisplayNameLength)]
     public string? DisplayName { get; set; }
 
-    [FirestoreProperty]
+    [StringLength(AppConstants.MaxBioLength)]
     public string? Bio { get; set; }
 
-    [FirestoreProperty]
     public bool? IsPublic { get; set; }
-  }
 }

@@ -1,5 +1,6 @@
 import {PostDto} from "@/DTOs/PostDto";
 import { API_BASE_URL } from "./config";
+import { MIN_SEARCH_LENGTH, DEFAULT_FEED_LIMIT } from "./constants";
 
 let authToken: string | null = null;
 
@@ -188,6 +189,7 @@ export async function searchMedia(query: string, category: MediaCategory = 'movi
     });
 
     if (!response.ok) {
+        console.error("searchMedia failed:", response.status, await response.text().catch(() => ""));
         return [];
     }
 
@@ -206,7 +208,7 @@ export async function getMediaById(id: string, mediaType: string = 'movie'): Pro
     });
 
     if (!response.ok) {
-        console.error("Failed to get media:", response.status);
+        console.error("getMediaById failed:", response.status, await response.text().catch(() => ""));
         return null;
     }
 
@@ -434,7 +436,10 @@ export async function unfollowUser(targetUserId: string): Promise<any> {
 async function fetchFollowList(url: string, label: string): Promise<any[]> {
     const response = await fetch(url, { method: "GET", headers: getHeaders() });
     if (!response.ok) {
-        if (response.status === 401) return [];
+        if (response.status === 401) {
+            console.warn(`${label}: unauthorized (401), returning empty list`);
+            return [];
+        }
         const errorBody = await response.text().catch(() => "");
         throw new Error(`${label} failed (${response.status}): ${errorBody || response.statusText}`);
     }
@@ -466,6 +471,7 @@ export async function getIsFollowing(userId: string): Promise<boolean> {
     });
 
     if (!response.ok) {
+        console.error("getIsFollowing failed:", response.status, await response.text().catch(() => ""));
         return false;
     }
 
@@ -479,7 +485,10 @@ export async function getFollowingCount(userId: string): Promise<number> {
         headers: getHeaders()
     });
 
-    if (!response.ok) return 0;
+    if (!response.ok) {
+        console.error("getFollowingCount failed:", response.status, await response.text().catch(() => ""));
+        return 0;
+    }
     const data = await response.json();
     return data.count;
 }
@@ -490,12 +499,15 @@ export async function getFollowersCount(userId: string): Promise<number> {
         headers: getHeaders()
     });
 
-    if (!response.ok) return 0;
+    if (!response.ok) {
+        console.error("getFollowersCount failed:", response.status, await response.text().catch(() => ""));
+        return 0;
+    }
     const data = await response.json();
     return data.count;
 }
 
-export async function getFeed(startAfter?: string, limit: number = 20): Promise<{ posts: any[], hasMore: boolean, nextCursor: string | null }> {
+export async function getFeed(startAfter?: string, limit: number = DEFAULT_FEED_LIMIT): Promise<{ posts: any[], hasMore: boolean, nextCursor: string | null }> {
     let url = `${API_BASE_URL}/posts/feed?limit=${limit}`;
     if (startAfter) {
         url += `&startAfter=${encodeURIComponent(startAfter)}`;
@@ -531,7 +543,7 @@ export async function getFeed(startAfter?: string, limit: number = 20): Promise<
 }
 
 export async function searchUsers(query: string): Promise<any[]> {
-    if (!query || query.length < 2) return [];
+    if (!query || query.length < MIN_SEARCH_LENGTH) return [];
 
     const response = await fetch(`${API_BASE_URL}/userprofiles/search?q=${encodeURIComponent(query)}`, {
         method: "GET",
@@ -539,6 +551,7 @@ export async function searchUsers(query: string): Promise<any[]> {
     });
 
     if (!response.ok) {
+        console.error("searchUsers failed:", response.status, await response.text().catch(() => ""));
         return [];
     }
 
