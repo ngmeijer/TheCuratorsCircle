@@ -28,20 +28,23 @@ public class FollowsController : ControllerBase
         return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
+    private IActionResult ApiError(int statusCode, string error, string? code = null)
+        => StatusCode(statusCode, new ApiErrorResponse { Error = error, Code = code });
+
     [HttpPost]
     [EnableRateLimiting("write")]
     public async Task<IActionResult> Follow([FromBody] FollowRequest request)
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
+
         if (currentProfile == null)
-            return Unauthorized(new { error = "Profile not found" });
+            return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
         var (success, error) = await _followService.FollowAsync(currentProfile.PersistentId, request.TargetUserId);
-        
+
         if (!success)
-            return BadRequest(new { error });
+            return BadRequest(new ApiErrorResponse { Error = error });
 
         return Ok(new { message = "Following" });
     }
@@ -52,14 +55,14 @@ public class FollowsController : ControllerBase
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
+
         if (currentProfile == null)
-            return Unauthorized(new { error = "Profile not found" });
+            return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
         var (success, error) = await _followService.UnfollowAsync(currentProfile.PersistentId, targetUserId);
-        
+
         if (!success)
-            return BadRequest(new { error });
+            return BadRequest(new ApiErrorResponse { Error = error });
 
         return Ok(new { message = "Unfollowed" });
     }
@@ -69,7 +72,7 @@ public class FollowsController : ControllerBase
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        if (currentProfile == null) return Unauthorized(new { error = "Profile not found" });
+        if (currentProfile == null) return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
         return Ok(ToPagedResponse(await _followService.GetFollowingPagedAsync(currentProfile.PersistentId, startAfter, limit)));
     }
@@ -79,7 +82,7 @@ public class FollowsController : ControllerBase
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        if (currentProfile == null) return Unauthorized(new { error = "Profile not found" });
+        if (currentProfile == null) return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
         return Ok(ToPagedResponse(await _followService.GetFollowersPagedAsync(currentProfile.PersistentId, startAfter, limit)));
     }
@@ -118,9 +121,9 @@ public class FollowsController : ControllerBase
     {
         var currentUserId = GetCurrentUserId();
         var currentProfile = await _profileService.GetByOwnerUidAsync(currentUserId);
-        
+
         if (currentProfile == null)
-            return Unauthorized(new { error = "Profile not found" });
+            return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
         var isFollowing = await _followService.IsFollowingAsync(currentProfile.PersistentId, userId);
         return Ok(new { isFollowing });

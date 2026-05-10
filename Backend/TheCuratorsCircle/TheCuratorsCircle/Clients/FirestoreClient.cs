@@ -6,9 +6,9 @@ public class FirestoreClient
 {
     private readonly FirestoreDb _db;
 
-    public FirestoreClient()
+    public FirestoreClient(FirestoreDb db)
     {
-        _db = FirestoreDb.Create("the-curator-s-circle");
+        _db = db;
     }
 
     public FirestoreDb Database => _db;

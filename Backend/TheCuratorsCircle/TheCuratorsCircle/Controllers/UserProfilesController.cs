@@ -6,6 +6,7 @@ using Backend.Services;
 using Backend.Models.Profiles;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using TheCuratorsCircle.Models;
 
 namespace TheCuratorsCircle.Controllers;
 
@@ -22,12 +23,15 @@ public class UserProfilesController : ControllerBase
         _logger = logger;
     }
 
+    private IActionResult ApiError(int statusCode, string error, string? code = null)
+        => StatusCode(statusCode, new ApiErrorResponse { Error = error, Code = code });
+
     [HttpGet("by-alias/{alias}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetByAlias(string alias)
     {
         var profile = await _profileService.GetByAliasAsync(alias);
-        if (profile == null) return NotFound();
+        if (profile == null) return NotFound(new ApiErrorResponse { Error = "Profile not found" });
         return Ok(profile);
     }
 
@@ -36,7 +40,7 @@ public class UserProfilesController : ControllerBase
     public async Task<IActionResult> GetByPersistentId(string persistentId)
     {
         var profile = await _profileService.GetByPersistentIdAsync(persistentId);
-        if (profile == null) return NotFound();
+        if (profile == null) return NotFound(new ApiErrorResponse { Error = "Profile not found" });
         return Ok(profile);
     }
 
@@ -49,7 +53,7 @@ public class UserProfilesController : ControllerBase
             return Unauthorized();
 
         var profile = await _profileService.GetByOwnerUidAsync(ownerUid);
-        if (profile == null) return NotFound();
+        if (profile == null) return NotFound(new ApiErrorResponse { Error = "Profile not found" });
         return Ok(profile);
     }
 
@@ -64,7 +68,7 @@ public class UserProfilesController : ControllerBase
 
         var (profile, error) = await _profileService.CreateAsync(ownerUid, request);
         if (error != null)
-            return BadRequest(new { error });
+            return BadRequest(new ApiErrorResponse { Error = error });
 
         return CreatedAtAction(nameof(GetByPersistentId), new { persistentId = profile.PersistentId }, profile);
     }
@@ -82,13 +86,35 @@ public class UserProfilesController : ControllerBase
         if (error != null)
         {
             if (error == "Profile not found")
-                return NotFound(new { error });
+                return NotFound(new ApiErrorResponse { Error = error });
             if (error == "You can only update your own profile")
-                return Forbidden(new { error });
-            return BadRequest(new { error });
+                return ApiError(403, error);
+            return BadRequest(new ApiErrorResponse { Error = error });
         }
 
         return Ok(profile);
+    }
+
+    [HttpDelete("{persistentId}")]
+    [Authorize]
+    [EnableRateLimiting("write")]
+    public async Task<IActionResult> Delete(string persistentId)
+    {
+        var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(ownerUid))
+            return Unauthorized();
+
+        var (success, error) = await _profileService.DeleteAsync(persistentId, ownerUid);
+        if (!success)
+        {
+            if (error == "Profile not found")
+                return NotFound(new ApiErrorResponse { Error = error });
+            if (error == "You can only delete your own profile")
+                return ApiError(403, error);
+            return BadRequest(new ApiErrorResponse { Error = error });
+        }
+
+        return NoContent();
     }
 
     [HttpGet("search")]
@@ -112,12 +138,7 @@ public class UserProfilesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Search failed for query '{Query}'", q);
-            return StatusCode(500, new { message = "Search failed.", details = ex.Message });
+            return ApiError(500, "Search failed.");
         }
-    }
-
-    private IActionResult Forbidden(object error)
-    {
-        return StatusCode(403, error);
     }
 }

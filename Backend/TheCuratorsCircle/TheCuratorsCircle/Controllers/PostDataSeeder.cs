@@ -1,34 +1,41 @@
 using TheCuratorsCircle.Clients;
-using TheCuratorsCircle.Mappers;
 using TheCuratorsCircle.Models.Content;
 
 namespace TheCuratorsCircle.Controllers;
 
 public class PostDataSeeder
 {
-    private readonly APIHTTPClient _apiClient;
+    private readonly OmdbSearchProvider _omdbProvider;
     public Dictionary<string, PostDto> SeededPosts { get; private set; } = new();
 
-    public PostDataSeeder(APIHTTPClient apiClient)
+    public PostDataSeeder(OmdbSearchProvider omdbProvider)
     {
-        _apiClient = apiClient;
+        _omdbProvider = omdbProvider;
     }
 
     public async Task SeedAsync()
     {
-        // Only seed if we haven't already
         if (SeededPosts.Any()) return;
 
         var mediaNames = new[] { "Iron Man", "300", "Avatar", "Breaking Bad" };
-        var tasks = mediaNames.Select(name => _apiClient.FetchMediaAsync(name));
+        var tasks = mediaNames.Select(name => _omdbProvider.SearchAsync(name));
         var results = await Task.WhenAll(tasks);
 
-        foreach (var response in results.Where(r => r != null))
+        foreach (var resultList in results)
         {
+            var first = resultList.FirstOrDefault();
+            if (first == null) continue;
+
             var dto = new PostDto {
                 Id = Guid.CreateVersion7().ToString(),
                 Name = "Test title",
-                MediaData = Mapper.MapToDto(response),
+                MediaData = new MediaDto
+                {
+                    Title = first.Title,
+                    PosterUrl = first.PosterUrl,
+                    ReleaseYear = first.Year,
+                    MediaType = first.Type,
+                },
                 CreatedAt = new DateTime(2026, 02, 14, 16,12,0).ToString("MM/dd/yyyy HH:mm"),
                 LikeCount = 4343,
                 CommentCount = 576,

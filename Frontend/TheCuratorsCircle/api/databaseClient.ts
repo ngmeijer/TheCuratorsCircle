@@ -16,6 +16,15 @@ function getHeaders(): HeadersInit {
     };
 }
 
+async function parseErrorMessage(response: Response): Promise<string> {
+    try {
+        const data = await response.json();
+        return data.error || `Error ${response.status}`;
+    } catch {
+        return `Error ${response.status}`;
+    }
+}
+
 export async function getCollections() {
     console.log("Getting collections from backend");
     const response = await fetch(`${API_BASE_URL}/collections`, {
@@ -23,15 +32,8 @@ export async function getCollections() {
         headers: getHeaders()
     });
 
-    if(!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error."};
-        }
-
-        throw new Error(data.message);
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -46,15 +48,8 @@ export async function getCollectionsByUserId(userId: string) {
         headers: getHeaders()
     });
 
-    if(!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error."};
-        }
-
-        throw new Error(data.message);
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -68,15 +63,8 @@ export async function getCollection(collectionId: string) {
         headers: getHeaders()
     });
 
-    if(!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error."};
-        }
-
-        throw new Error(data.message);
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -97,15 +85,8 @@ export async function createCollection(payload: CreateCollectionPayload) {
         body: JSON.stringify(payload)
     });
 
-    if(!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error."};
-        }
-
-        throw new Error(data.message);
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -122,15 +103,8 @@ export async function getPosts(userId?: string) {
         headers: getHeaders()
     });
 
-    if(!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error."};
-        }
-
-        throw new Error(data.message);
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -148,15 +122,8 @@ export async function getPost(postId: string){
         headers: getHeaders()
     });
 
-    if(!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error."};
-        }
-
-        throw new Error(data.message);
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -232,13 +199,7 @@ export async function createPost(payload: CreatePostPayload): Promise<any> {
     });
 
     if (!response.ok) {
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: "Unknown error." };
-        }
-        throw new Error(data.message);
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -263,16 +224,7 @@ export async function getUserProfileByAlias(alias: string): Promise<any> {
         if (response.status === 404) {
             return null;
         }
-        let responseText = "";
-        try {
-            responseText = await response.text();
-            console.log("Error response text:", responseText);
-            const data = JSON.parse(responseText);
-            throw new Error(data.message || `Error ${response.status}`);
-        } catch (e: any) {
-            if (e instanceof Error && e.message.includes("Error")) throw e;
-            throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
-        }
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -291,16 +243,7 @@ export async function getUserProfileById(persistentId: string): Promise<any> {
         if (response.status === 404) {
             return null;
         }
-        let responseText = "";
-        try {
-            responseText = await response.text();
-            console.log("Error response text:", responseText);
-            const data = JSON.parse(responseText);
-            throw new Error(data.message || `Error ${response.status}`);
-        } catch (e: any) {
-            if (e instanceof Error && e.message.includes("Error")) throw e;
-            throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
-        }
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -317,21 +260,8 @@ export async function createUserProfile(payload: CreateUserProfilePayload): Prom
     });
 
     if (!response.ok) {
-        let data;
-        let responseText = "";
-        try {
-            responseText = await response.text();
-            console.log("Error response text:", responseText);
-            data = JSON.parse(responseText);
-        } catch {
-            data = { message: "Unknown error.", details: responseText };
-        }
-        console.error("Create profile failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            data
-        });
-        throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+        console.error("Create profile failed:", { status: response.status, statusText: response.statusText });
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -350,16 +280,7 @@ export async function getCurrentUserProfile(): Promise<any> {
         if (response.status === 404) {
             return null;
         }
-        let responseText = "";
-        try {
-            responseText = await response.text();
-            console.log("Error response text:", responseText);
-            const data = JSON.parse(responseText);
-            throw new Error(data.message || `Error ${response.status}`);
-        } catch (e: any) {
-            if (e instanceof Error && e.message.includes("Error")) throw e;
-            throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
-        }
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
@@ -383,21 +304,24 @@ export async function updateUserProfile(persistentId: string, payload: UpdateUse
     });
 
     if (!response.ok) {
-        let responseText = "";
-        try {
-            responseText = await response.text();
-            console.log("Error response text:", responseText);
-            const data = JSON.parse(responseText);
-            throw new Error(data.message || `Error ${response.status}`);
-        } catch (e: any) {
-            if (e instanceof Error && e.message.includes("Error")) throw e;
-            throw new Error(`Error ${response.status}: ${responseText || response.statusText}`);
-        }
+        throw new Error(await parseErrorMessage(response));
     }
 
     const receivedData = await response.json();
     console.log("User profile updated:", receivedData);
     return receivedData;
+}
+
+export async function deleteUserProfile(persistentId: string): Promise<void> {
+    console.log("Deleting user profile:", persistentId);
+    const response = await fetch(`${API_BASE_URL}/userprofiles/${persistentId}`, {
+        method: "DELETE",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseErrorMessage(response));
+    }
 }
 
 export async function followUser(targetUserId: string): Promise<any> {
@@ -409,8 +333,7 @@ export async function followUser(targetUserId: string): Promise<any> {
     });
 
     if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || `Error ${response.status}`);
+        throw new Error(await parseErrorMessage(response));
     }
 
     return response.json();
@@ -424,8 +347,7 @@ export async function unfollowUser(targetUserId: string): Promise<any> {
     });
 
     if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || `Error ${response.status}`);
+        throw new Error(await parseErrorMessage(response));
     }
 
     return response.json();
@@ -512,17 +434,7 @@ export async function getFeed(startAfter?: string, limit: number = 20): Promise<
         if (response.status === 401) {
             return { posts: [], hasMore: false, nextCursor: null };
         }
-        let errorMessage = `Error ${response.status}`;
-        try {
-            const errorData = await response.json();
-            console.error("[API] Feed error response:", errorData);
-            errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-        } catch {
-            const errorText = await response.text();
-            console.error("[API] Feed error text:", errorText);
-            errorMessage = errorText || errorMessage;
-        }
-        throw new Error(errorMessage);
+        throw new Error(await parseErrorMessage(response));
     }
 
     const data = await response.json();

@@ -21,7 +21,7 @@ public class CollectionsControllerTests
     private readonly Mock<ICollectionRepository> _mockRepository;
     private readonly Mock<IUserProfileService> _mockProfileService;
     private readonly Mock<ILogger<CollectionsController>> _mockLogger;
-    private readonly Mock<APIHTTPClient> _mockApiClient;
+    private readonly Mock<MediaSearchProviderFactory> _mockProviderFactory;
     private readonly CollectionsController _controller;
 
     public CollectionsControllerTests()
@@ -29,12 +29,14 @@ public class CollectionsControllerTests
         _mockRepository = new Mock<ICollectionRepository>();
         _mockProfileService = new Mock<IUserProfileService>();
         _mockLogger = new Mock<ILogger<CollectionsController>>();
-        _mockApiClient = new Mock<APIHTTPClient>(new HttpClient(), Mock.Of<IConfiguration>());
+        var mockOmdbProvider = new Mock<OmdbSearchProvider>(new HttpClient(), Mock.Of<IConfiguration>());
+        var mockRawgProvider = new Mock<RawgSearchProvider>(new HttpClient(), Mock.Of<IConfiguration>());
+        _mockProviderFactory = new Mock<MediaSearchProviderFactory>(mockOmdbProvider.Object, mockRawgProvider.Object);
 
         _controller = new CollectionsController(
             _mockRepository.Object,
             _mockLogger.Object,
-            _mockApiClient.Object,
+            _mockProviderFactory.Object,
             _mockProfileService.Object
         );
 

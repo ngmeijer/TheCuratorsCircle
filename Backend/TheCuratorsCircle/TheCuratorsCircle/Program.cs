@@ -33,14 +33,14 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FIREBASE_WEB_API_KE
 builder.Configuration["Firebase:WebApiKey"] = Environment.GetEnvironmentVariable("FIREBASE_WEB_API_KEY");
 builder.Services.AddSingleton(FirebaseApp.Create());
 builder.Services.AddSingleton(FirebaseAuth.DefaultInstance);
-builder.Services.AddSingleton(FirestoreDb.Create("the-curator-s-circle"));
+var firestoreDbId = builder.Configuration["Firestore:DatabaseId"]
+    ?? throw new InvalidOperationException("Firestore:DatabaseId not configured");
+builder.Services.AddSingleton(FirestoreDb.Create(firestoreDbId));
 
 builder.Services.AddSingleton<IUserProfileService, UserProfileService>();
 builder.Services.AddSingleton<IFollowService, FollowService>();
 builder.Services.AddSingleton<ICollectionRepository, FirestoreCollectionRepository>();
 
-builder.Services.AddHttpClient<APIHTTPClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
-builder.Services.AddHttpClient<RawgClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<OmdbSearchProvider>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<RawgSearchProvider>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddSingleton<OmdbSearchProvider>();

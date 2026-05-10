@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using Backend.Services;
 using TheCuratorsCircle.Clients;
+using TheCuratorsCircle.Models;
 using TheCuratorsCircle.Models.Content;
 using TheCuratorsCircle.Repositories;
 
@@ -17,16 +18,19 @@ public class CollectionsController : ControllerBase
 {
     private readonly ICollectionRepository _collectionRepository;
     private readonly ILogger<CollectionsController> _logger;
-    private readonly APIHTTPClient _apiClient;
+    private readonly MediaSearchProviderFactory _providerFactory;
     private readonly IUserProfileService _profileService;
 
-    public CollectionsController(ICollectionRepository collectionRepository, ILogger<CollectionsController> logger, APIHTTPClient apiClient, IUserProfileService profileService)
+    public CollectionsController(ICollectionRepository collectionRepository, ILogger<CollectionsController> logger, MediaSearchProviderFactory providerFactory, IUserProfileService profileService)
     {
         _collectionRepository = collectionRepository;
         _logger = logger;
-        _apiClient = apiClient;
+        _providerFactory = providerFactory;
         _profileService = profileService;
     }
+
+    private IActionResult ApiError(int statusCode, string error, string? code = null)
+        => StatusCode(statusCode, new ApiErrorResponse { Error = error, Code = code });
 
     [HttpPost]
     [EnableRateLimiting("write")]
@@ -37,7 +41,7 @@ public class CollectionsController : ControllerBase
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreateCollection validation failed");
-            return BadRequest(new { message = "Invalid data. Collection name is required." });
+            return BadRequest(new ApiErrorResponse { Error = "Invalid data. Collection name is required." });
         }
 
         var ownerUid = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -67,7 +71,7 @@ public class CollectionsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating collection for user {PersistentId}", profile.PersistentId);
-            return StatusCode(500, new { message = "Failed to create collection.", details = ex.Message });
+            return ApiError(500, "Failed to create collection.");
         }
     }
 
@@ -123,9 +127,13 @@ public class CollectionsController : ControllerBase
                         var post = await _collectionRepository.GetPostByIdAsync(firstPostId);
                         if (post != null)
                         {
-                            var mediaInfo = await _apiClient.FetchMediaByIdAsync(post.MediaId);
-                            if (mediaInfo != null)
-                                response.PosterUrl = mediaInfo.Poster;
+                            var provider = _providerFactory.GetProvider(post.MediaType);
+                            if (provider != null)
+                            {
+                                var mediaInfo = await provider.GetByIdAsync(post.MediaId);
+                                if (mediaInfo != null)
+                                    response.PosterUrl = mediaInfo.PosterUrl;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -145,9 +153,9 @@ public class CollectionsController : ControllerBase
             _logger.LogError(ex, "Error fetching collections for user {UserId}", targetUserId);
 
             if (ex.Message.Contains("index"))
-                return StatusCode(500, new { message = "Database index error. Please try again later.", details = ex.Message });
+                return ApiError(500, "Database index error. Please try again later.");
 
-            return StatusCode(500, new { message = "Failed to retrieve collections.", details = ex.Message });
+            return ApiError(500, "Failed to retrieve collections.");
         }
     }
 
@@ -171,7 +179,7 @@ public class CollectionsController : ControllerBase
             if (collection == null)
             {
                 _logger.LogWarning("Collection not found - CollectionId: {CollectionId}", collectionId);
-                return NotFound(new { message = "Collection not found" });
+                return NotFound(new ApiErrorResponse { Error = "Collection not found" });
             }
 
             if (collection.UserId != profile.PersistentId)
@@ -186,7 +194,7 @@ public class CollectionsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching collection {CollectionId}", collectionId);
-            return StatusCode(500, new { message = "Failed to retrieve collection.", details = ex.Message });
+            return ApiError(500, "Failed to retrieve collection.");
         }
     }
 }

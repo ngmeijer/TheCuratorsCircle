@@ -1,37 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    FlatList,
-    Image,
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { searchMedia, createPost, createCollection, getCollections, MediaCategory, MediaSearchResult, CreatePostPayload } from '@/api/databaseClient';
+import { ChooseStep } from '@/components/createPost/ChooseStep';
+import { CreateCollectionStep } from '@/components/createPost/CreateCollectionStep';
+import { CategoryStep } from '@/components/createPost/CategoryStep';
+import { SearchStep } from '@/components/createPost/SearchStep';
+import { SelectStep } from '@/components/createPost/SelectStep';
+import { CollectionStep } from '@/components/createPost/CollectionStep';
+import { CaptionStep } from '@/components/createPost/CaptionStep';
 
 type Step = 'choose' | 'createCollection' | 'category' | 'search' | 'select' | 'pickCollection' | 'caption';
-
-const CATEGORIES: { id: MediaCategory; label: string; icon: string }[] = [
-    { id: 'movie', label: 'Movie', icon: 'film' },
-    { id: 'series', label: 'TV Show', icon: 'tv' },
-    { id: 'game', label: 'Game', icon: 'game-controller' },
-    { id: 'book', label: 'Book', icon: 'book' },
-    { id: 'music', label: 'Music', icon: 'musical-notes' },
-];
 
 export default function CreatePost() {
     const navigation = useNavigation();
     const [step, setStep] = useState<Step>('choose');
     const stepRef = useRef(step);
-    
+
+    const [category, setCategory] = useState<MediaCategory | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<MediaSearchResult[]>([]);
+    const [selectedMedia, setSelectedMedia] = useState<MediaSearchResult | null>(null);
+    const [title, setTitle] = useState('');
+    const [caption, setCaption] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const [collectionName, setCollectionName] = useState('');
+    const [collections, setCollections] = useState<{ id: string; name: string }[]>([]);
+    const [selectedCollection, setSelectedCollection] = useState<{ id: string; name: string } | null>(null);
+    const [loadingCollections, setLoadingCollections] = useState(false);
+
     useEffect(() => {
         stepRef.current = step;
     }, [step]);
@@ -55,21 +54,7 @@ export default function CreatePost() {
         }
     };
 
-    const [category, setCategory] = useState<MediaCategory | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<MediaSearchResult[]>([]);
-    const [selectedMedia, setSelectedMedia] = useState<MediaSearchResult | null>(null);
-    const [title, setTitle] = useState('');
-    const [caption, setCaption] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [searching, setSearching] = useState(false);
-    const [collectionName, setCollectionName] = useState('');
-    const [collections, setCollections] = useState<{id: string; name: string}[]>([]);
-    const [selectedCollection, setSelectedCollection] = useState<{id: string; name: string} | null>(null);
-    const [loadingCollections, setLoadingCollections] = useState(false);
-
     const handleBack = () => {
-        console.log('handleBack called, step:', stepRef.current);
         if (stepRef.current === 'choose') {
             router.back();
         } else if (stepRef.current === 'createCollection') {
@@ -101,20 +86,12 @@ export default function CreatePost() {
                 handleBack();
             }
         };
-        
+
         navigation.addListener('beforeRemove', handleBackPress);
         return () => {
             navigation.removeListener('beforeRemove', handleBackPress);
         };
     }, [navigation, step]);
-
-    const handleChooseCollection = () => {
-        setStep('createCollection');
-    };
-
-    const handleChoosePost = () => {
-        setStep('category');
-    };
 
     const handleCreateCollection = async () => {
         if (!collectionName.trim()) {
@@ -136,14 +113,9 @@ export default function CreatePost() {
         }
     };
 
-    const handleCategorySelect = (cat: MediaCategory) => {
-        setCategory(cat);
-        setStep('search');
-    };
-
     const handleSearch = async () => {
         if (!searchQuery.trim() || !category) return;
-        
+
         setSearching(true);
         try {
             const results = await searchMedia(searchQuery, category);
@@ -161,7 +133,7 @@ export default function CreatePost() {
         setStep('pickCollection');
     };
 
-    const handleSelectCollection = (collection: {id: string; name: string}) => {
+    const handleSelectCollection = (collection: { id: string; name: string }) => {
         setSelectedCollection(collection);
         setStep('caption');
     };
@@ -207,279 +179,16 @@ export default function CreatePost() {
         }
     };
 
-    const renderChoose = () => (
-        <View style={styles.content}>
-            <Text style={styles.title}>What would you like to create?</Text>
-            
-            <TouchableOpacity
-                style={styles.optionCard}
-                onPress={handleChooseCollection}
-            >
-                <View style={styles.optionIconContainer}>
-                    <Ionicons name="folder-open" size={32} color="#fff" />
-                </View>
-                <View style={styles.optionTextContainer}>
-                    <Text style={styles.optionTitle}>Create Collection</Text>
-                    <Text style={styles.optionDescription}>Save media to a board</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.optionCard}
-                onPress={handleChoosePost}
-            >
-                <View style={styles.optionIconContainer}>
-                    <Ionicons name="create" size={32} color="#fff" />
-                </View>
-                <View style={styles.optionTextContainer}>
-                    <Text style={styles.optionTitle}>Create Post</Text>
-                    <Text style={styles.optionDescription}>Share media with others</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
-            </TouchableOpacity>
-        </View>
-    );
-
-    const renderCreateCollection = () => (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.content}
-        >
-            <ScrollView>
-                <Text style={styles.title}>New Collection</Text>
-                <Text style={styles.fieldLabel}>Collection Name</Text>
-                <TextInput
-                    style={styles.titleInput}
-                    placeholder="e.g., My Favorite Movies"
-                    placeholderTextColor="#888"
-                    value={collectionName}
-                    onChangeText={setCollectionName}
-                    maxLength={100}
-                    autoFocus
-                />
-                <TouchableOpacity
-                    style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-                    onPress={handleCreateCollection}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                        <Text style={styles.submitButtonText}>Create Collection</Text>
-                    )}
-                </TouchableOpacity>
-            </ScrollView>
-        </KeyboardAvoidingView>
-    );
-
-    const renderCategory = () => (
-        <View style={styles.content}>
-            <Text style={styles.title}>What are you sharing?</Text>
-            <View style={styles.categoryList}>
-                {CATEGORIES.map((cat) => (
-                    <TouchableOpacity
-                        key={cat.id}
-                        style={styles.categoryRow}
-                        onPress={() => handleCategorySelect(cat.id)}
-                    >
-                        <Ionicons name={cat.icon as any} size={28} color="#fff" />
-                        <Text style={styles.categoryLabel}>{cat.label}</Text>
-                        <Ionicons name="chevron-forward" size={24} color="#666" />
-                    </TouchableOpacity>
-                ))}
-            </View>
-        </View>
-    );
-
-    const renderSearch = () => (
-        <View style={styles.content}>
-            <Text style={styles.title}>Search {category}</Text>
-            <View style={styles.searchContainer}>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder={`Search for a ${category}...`}
-                    placeholderTextColor="#888"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    onSubmitEditing={handleSearch}
-                    autoCapitalize="none"
-                />
-                <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-                    <Ionicons name="search" size={24} color="#fff" />
-                </TouchableOpacity>
-            </View>
-
-            {searching ? (
-                <ActivityIndicator size="large" color="#fff" style={styles.loader} />
-            ) : (
-                <FlatList
-                    data={searchResults}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.resultItem}
-                            onPress={() => handleSelectMedia(item)}
-                        >
-                            {item.posterUrl && item.posterUrl !== '' && (
-                                <Image source={{ uri: item.posterUrl }} style={styles.resultPoster} />
-                            )}
-                            <View style={styles.resultInfo}>
-                                <Text style={styles.resultTitle}>{item.title}</Text>
-                                <Text style={styles.resultYear}>{item.year}</Text>
-                                <Text style={styles.resultType}>{item.type}</Text>
-                            </View>
-                        </TouchableOpacity>
-                    )}
-                    ListEmptyComponent={
-                        searchQuery.length > 0 ? (
-                            <Text style={styles.emptyText}>No results found</Text>
-                        ) : null
-                    }
-                />
-            )}
-        </View>
-    );
-
-    const renderSelect = () => (
-        <View style={styles.content}>
-            <Text style={styles.title}>Selected</Text>
-            {selectedMedia && (
-                <View style={styles.selectedContainer}>
-                    {selectedMedia.posterUrl && selectedMedia.posterUrl !== '' && (
-                        <Image source={{ uri: selectedMedia.posterUrl }} style={styles.selectedPoster} />
-                    )}
-                    <Text style={styles.selectedTitle}>{selectedMedia.title}</Text>
-                    <Text style={styles.selectedYear}>{selectedMedia.year}</Text>
-                </View>
-            )}
-            <TouchableOpacity style={styles.continueButton} onPress={() => setStep('pickCollection')}>
-                <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
-    const renderPickCollection = () => (
-        <View style={styles.content}>
-            <Text style={styles.title}>Add to Collection</Text>
-            <Text style={styles.subtitle}>Select a collection for this post (required)</Text>
-            
-            {loadingCollections ? (
-                <ActivityIndicator size="large" color="#fff" style={styles.loader} />
-            ) : collections.length === 0 ? (
-                <View style={styles.emptyCollections}>
-                    <Text style={styles.emptyText}>No collections yet</Text>
-                    <Text style={styles.emptySubtext}>Create a collection first from your profile</Text>
-                </View>
-            ) : (
-                <ScrollView style={styles.collectionList}>
-                    {collections.map((collection) => (
-                        <TouchableOpacity
-                            key={collection.id}
-                            style={[
-                                styles.collectionItem,
-                                selectedCollection?.id === collection.id && styles.collectionItemSelected
-                            ]}
-                            onPress={() => handleSelectCollection(collection)}
-                        >
-                            <Ionicons 
-                                name="folder" 
-                                size={24} 
-                                color={selectedCollection?.id === collection.id ? '#3b82f6' : '#fff'} 
-                            />
-                            <Text style={[
-                                styles.collectionName,
-                                selectedCollection?.id === collection.id && styles.collectionNameSelected
-                            ]}>
-                                {collection.name}
-                            </Text>
-                            {selectedCollection?.id === collection.id && (
-                                <Ionicons name="checkmark-circle" size={24} color="#3b82f6" />
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            )}
-            
-            {selectedCollection && (
-                <TouchableOpacity 
-                    style={[styles.continueButton, styles.marginTop]} 
-                    onPress={handleContinueToCaption}
-                >
-                    <Text style={styles.continueButtonText}>Continue</Text>
-                </TouchableOpacity>
-            )}
-        </View>
-    );
-
-    const renderCaption = () => (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.content}
-        >
-            <ScrollView>
-                <Text style={styles.title}>Create your post</Text>
-                {selectedMedia && (
-                    <View style={styles.previewContainer}>
-                        {selectedMedia.posterUrl && selectedMedia.posterUrl !== '' && (
-                            <Image source={{ uri: selectedMedia.posterUrl }} style={styles.previewPoster} />
-                        )}
-                        <Text style={styles.previewTitle}>{selectedMedia.title}</Text>
-                    </View>
-                )}
-                <Text style={styles.fieldLabel}>Title (required)</Text>
-                <TextInput
-                    style={styles.titleInput}
-                    placeholder="A short catchphrase..."
-                    placeholderTextColor="#888"
-                    value={title}
-                    onChangeText={setTitle}
-                    maxLength={100}
-                />
-                <Text style={styles.fieldLabel}>Caption (optional)</Text>
-                <TextInput
-                    style={styles.captionInput}
-                    placeholder="Expand on your title..."
-                    placeholderTextColor="#888"
-                    value={caption}
-                    onChangeText={setCaption}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                />
-                <TouchableOpacity
-                    style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-                    onPress={handleSubmit}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                        <Text style={styles.submitButtonText}>Share</Text>
-                    )}
-                </TouchableOpacity>
-            </ScrollView>
-        </KeyboardAvoidingView>
-    );
-
     const getHeaderTitle = () => {
         switch (step) {
-            case 'choose':
-                return 'Create New';
-            case 'createCollection':
-                return 'New Collection';
-            case 'category':
-                return 'Create Post';
-            case 'search':
-                return 'Search';
-            case 'select':
-                return 'Confirm';
-            case 'pickCollection':
-                return 'Add to Collection';
-            case 'caption':
-                return 'Caption';
-            default:
-                return 'Create';
+            case 'choose': return 'Create New';
+            case 'createCollection': return 'New Collection';
+            case 'category': return 'Create Post';
+            case 'search': return 'Search';
+            case 'select': return 'Confirm';
+            case 'pickCollection': return 'Add to Collection';
+            case 'caption': return 'Caption';
+            default: return 'Create';
         }
     };
 
@@ -493,13 +202,62 @@ export default function CreatePost() {
                 <View style={styles.placeholder} />
             </View>
 
-            {step === 'choose' && renderChoose()}
-            {step === 'createCollection' && renderCreateCollection()}
-            {step === 'category' && renderCategory()}
-            {step === 'search' && renderSearch()}
-            {step === 'select' && renderSelect()}
-            {step === 'pickCollection' && renderPickCollection()}
-            {step === 'caption' && renderCaption()}
+            {step === 'choose' && (
+                <ChooseStep
+                    onChooseCollection={() => setStep('createCollection')}
+                    onChoosePost={() => setStep('category')}
+                />
+            )}
+            {step === 'createCollection' && (
+                <CreateCollectionStep
+                    collectionName={collectionName}
+                    onChangeName={setCollectionName}
+                    loading={loading}
+                    onSubmit={handleCreateCollection}
+                />
+            )}
+            {step === 'category' && (
+                <CategoryStep
+                    onSelect={(cat) => { setCategory(cat); setStep('search'); }}
+                />
+            )}
+            {step === 'search' && category && (
+                <SearchStep
+                    category={category}
+                    searchQuery={searchQuery}
+                    onChangeQuery={setSearchQuery}
+                    onSearch={handleSearch}
+                    searching={searching}
+                    results={searchResults}
+                    onSelectMedia={handleSelectMedia}
+                />
+            )}
+            {step === 'select' && selectedMedia && (
+                <SelectStep
+                    selectedMedia={selectedMedia}
+                    onContinue={() => setStep('pickCollection')}
+                />
+            )}
+            {step === 'pickCollection' && (
+                <CollectionStep
+                    collections={collections}
+                    selectedCollection={selectedCollection}
+                    loading={loadingCollections}
+                    onSelectCollection={handleSelectCollection}
+                    onContinue={handleContinueToCaption}
+                />
+            )}
+            {step === 'caption' && (
+                <CaptionStep
+                    selectedMedia={selectedMedia}
+                    title={title}
+                    caption={caption}
+                    loading={loading}
+                    onChangeTitle={setTitle}
+                    onChangeCaption={setCaption}
+                    onSubmit={handleSubmit}
+                />
+            )}
         </View>
     );
 }
@@ -529,247 +287,5 @@ const styles = StyleSheet.create({
     },
     placeholder: {
         width: 40,
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 24,
-    },
-    optionCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#1e293b',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-    },
-    optionIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#3b82f6',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    optionTextContainer: {
-        flex: 1,
-        marginLeft: 16,
-    },
-    optionTitle: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    optionDescription: {
-        color: '#888',
-        fontSize: 14,
-        marginTop: 4,
-    },
-    categoryList: {
-        gap: 12,
-    },
-    categoryRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#1e293b',
-        borderRadius: 12,
-        padding: 16,
-    },
-    categoryLabel: {
-        color: '#fff',
-        fontSize: 18,
-        flex: 1,
-        marginLeft: 16,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        marginBottom: 16,
-    },
-    searchInput: {
-        flex: 1,
-        backgroundColor: '#1e293b',
-        borderRadius: 8,
-        padding: 12,
-        color: '#fff',
-        fontSize: 16,
-    },
-    searchButton: {
-        backgroundColor: '#3b82f6',
-        borderRadius: 8,
-        padding: 12,
-        marginLeft: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loader: {
-        marginTop: 40,
-    },
-    resultItem: {
-        flexDirection: 'row',
-        backgroundColor: '#1e293b',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-    },
-    resultPoster: {
-        width: 60,
-        height: 90,
-        borderRadius: 4,
-    },
-    resultInfo: {
-        marginLeft: 12,
-        flex: 1,
-        justifyContent: 'center',
-    },
-    resultTitle: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    resultYear: {
-        color: '#888',
-        fontSize: 14,
-    },
-    resultType: {
-        color: '#3b82f6',
-        fontSize: 12,
-    },
-    emptyText: {
-        color: '#888',
-        textAlign: 'center',
-        marginTop: 40,
-    },
-    selectedContainer: {
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    selectedPoster: {
-        width: 150,
-        height: 225,
-        borderRadius: 8,
-    },
-    selectedTitle: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: '600',
-        marginTop: 12,
-    },
-    selectedYear: {
-        color: '#888',
-        fontSize: 14,
-    },
-    continueButton: {
-        backgroundColor: '#3b82f6',
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-    },
-    continueButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    previewContainer: {
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    previewPoster: {
-        width: 100,
-        height: 150,
-        borderRadius: 8,
-    },
-    previewTitle: {
-        color: '#fff',
-        fontSize: 16,
-        marginTop: 8,
-    },
-    fieldLabel: {
-        color: '#fff',
-        fontSize: 14,
-        marginBottom: 8,
-        marginTop: 16,
-    },
-    titleInput: {
-        backgroundColor: '#1e293b',
-        borderRadius: 8,
-        padding: 16,
-        color: '#fff',
-        fontSize: 16,
-    },
-    captionInput: {
-        backgroundColor: '#1e293b',
-        borderRadius: 8,
-        padding: 16,
-        color: '#fff',
-        fontSize: 16,
-        minHeight: 120,
-        marginBottom: 24,
-    },
-    submitButton: {
-        backgroundColor: '#3b82f6',
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-        marginTop: 24,
-    },
-    submitButtonDisabled: {
-        opacity: 0.6,
-    },
-    submitButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#888',
-        marginBottom: 16,
-        marginTop: -16,
-    },
-    collectionList: {
-        flex: 1,
-        marginTop: 16,
-    },
-    collectionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#1e293b',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 12,
-    },
-    collectionItemSelected: {
-        backgroundColor: '#1e3a5f',
-        borderWidth: 1,
-        borderColor: '#3b82f6',
-    },
-    collectionName: {
-        flex: 1,
-        color: '#fff',
-        fontSize: 16,
-        marginLeft: 12,
-    },
-    collectionNameSelected: {
-        color: '#3b82f6',
-        fontWeight: '600',
-    },
-    emptyCollections: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 40,
-    },
-    emptySubtext: {
-        color: '#666',
-        fontSize: 14,
-        marginTop: 8,
-    },
-    marginTop: {
-        marginTop: 16,
     },
 });

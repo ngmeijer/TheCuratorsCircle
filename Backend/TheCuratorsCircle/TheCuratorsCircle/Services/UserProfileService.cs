@@ -14,6 +14,7 @@ namespace Backend.Services
     Task<UserProfile> GetByOwnerUidAsync(string ownerUid);
     Task<(UserProfile Profile, string Error)> CreateAsync(string ownerUid, CreateUserProfileRequest request);
     Task<(UserProfile Profile, string Error)> UpdateAsync(string persistentId, string ownerUid, UpdateUserProfileRequest request);
+    Task<(bool Success, string Error)> DeleteAsync(string persistentId, string ownerUid);
     Task<List<UserProfile>> SearchByUsernameAsync(string query);
   }
 
@@ -41,7 +42,7 @@ namespace Backend.Services
       var aliasRef = _db.Collection("usernames").Document(alias);
       var aliasSnap = await aliasRef.GetSnapshotAsync();
       if (!aliasSnap.Exists) return null;
-      
+
       var mapping = aliasSnap.ConvertTo<AliasMapping>();
       if (mapping == null || string.IsNullOrEmpty(mapping.PersistentId)) return null;
 
@@ -54,37 +55,30 @@ namespace Backend.Services
           .WhereEqualTo("OwnerUid", ownerUid)
           .Limit(1)
           .GetSnapshotAsync();
-      
+
       if (snapshot.Documents.Count == 0) return null;
-      
+
       return snapshot.Documents[0].ConvertTo<UserProfile>();
     }
 
     public async Task<(UserProfile Profile, string Error)> CreateAsync(string ownerUid, CreateUserProfileRequest request)
     {
-      // Check if user already has a profile
       var existingProfile = await GetByOwnerUidAsync(ownerUid);
       if (existingProfile != null)
         return (null, "You already have a profile");
 
       if (string.IsNullOrEmpty(request.Username))
         return (null, "Username is required");
-      
+
       if (!request.Username.StartsWith("@"))
         return (null, "Username must start with @");
 
       var username = request.Username;
-      var aliasRef = _db.Collection("usernames").Document(username);
-      var aliasSnap = await aliasRef.GetSnapshotAsync();
-      if (aliasSnap.Exists)
-      {
-        var existingMapping = aliasSnap.ConvertTo<AliasMapping>();
-        if (existingMapping.IsActive)
-          return (null, "Username is already taken");
-      }
-
       var persistentId = Guid.NewGuid().ToString();
       var timestamp = Timestamp.GetCurrentTimestamp();
+      var aliasRef = _db.Collection("usernames").Document(username);
+
+      string transactionError = null;
 
       var profile = new UserProfile
       {
@@ -101,6 +95,18 @@ namespace Backend.Services
 
       await _db.RunTransactionAsync(async transaction =>
       {
+        // Availability check inside transaction prevents race conditions
+        var aliasSnap = await transaction.GetSnapshotAsync(aliasRef);
+        if (aliasSnap.Exists)
+        {
+          var existingMapping = aliasSnap.ConvertTo<AliasMapping>();
+          if (existingMapping.IsActive)
+          {
+            transactionError = "Username is already taken";
+            return;
+          }
+        }
+
         transaction.Set(_db.Collection("userProfiles").Document(persistentId), profile);
         transaction.Set(aliasRef, new AliasMapping
         {
@@ -111,6 +117,9 @@ namespace Backend.Services
           UpdatedAt = timestamp
         });
       });
+
+      if (transactionError != null)
+        return (null, transactionError);
 
       return (profile, null);
     }
@@ -123,8 +132,7 @@ namespace Backend.Services
         return (null, "Profile not found");
 
       var profile = profileSnap.ConvertTo<UserProfile>();
-      
-      // Ownership validation
+
       if (profile.OwnerUid != ownerUid)
         return (null, "You can only update your own profile");
 
@@ -134,64 +142,129 @@ namespace Backend.Services
         { "UpdatedAt", timestamp }
       };
 
-      // Handle username change
-      if (!string.IsNullOrEmpty(request.Username) && request.Username != profile.UsernamesHistory[0])
+      bool usernameChanged = !string.IsNullOrEmpty(request.Username) && request.Username != profile.UsernamesHistory[0];
+
+      if (usernameChanged)
       {
         if (!request.Username.StartsWith("@"))
           return (null, "Username must start with @");
 
         var newAliasRef = _db.Collection("usernames").Document(request.Username);
-        var newAliasSnap = await newAliasRef.GetSnapshotAsync();
-        if (newAliasSnap.Exists)
-        {
-          var existingMapping = newAliasSnap.ConvertTo<AliasMapping>();
-          if (existingMapping.IsActive && existingMapping.PersistentId != persistentId)
-            return (null, "Username is already taken");
-        }
+        var oldAlias = profile.UsernamesHistory[0];
+        var oldAliasRef = string.IsNullOrEmpty(oldAlias) ? null : _db.Collection("usernames").Document(oldAlias);
 
-        // Add new username to history (newest first)
         var newHistory = new List<string> { request.Username };
         foreach (var oldUsername in profile.UsernamesHistory)
         {
           if (oldUsername != request.Username)
             newHistory.Add(oldUsername);
         }
-        updates["UsernamesHistory"] = newHistory;
-        updates["UsernameLower"] = request.Username.TrimStart('@').ToLowerInvariant();
 
-        // Create new alias mapping
-        await newAliasRef.SetAsync(new AliasMapping
+        string transactionError = null;
+
+        await _db.RunTransactionAsync(async transaction =>
         {
-          Alias = request.Username,
-          PersistentId = persistentId,
-          OwnerUid = profile.OwnerUid,
-          IsActive = true,
-          UpdatedAt = timestamp
+          // Availability check inside transaction prevents race conditions
+          var newAliasSnap = await transaction.GetSnapshotAsync(newAliasRef);
+          if (newAliasSnap.Exists)
+          {
+            var existingMapping = newAliasSnap.ConvertTo<AliasMapping>();
+            if (existingMapping.IsActive && existingMapping.PersistentId != persistentId)
+            {
+              transactionError = "Username is already taken";
+              return;
+            }
+          }
+
+          transaction.Set(newAliasRef, new AliasMapping
+          {
+            Alias = request.Username,
+            PersistentId = persistentId,
+            OwnerUid = profile.OwnerUid,
+            IsActive = true,
+            UpdatedAt = timestamp
+          });
+
+          if (oldAliasRef != null)
+          {
+            transaction.Update(oldAliasRef, new Dictionary<string, object> { { "IsActive", false } });
+          }
+
+          var usernameUpdates = new Dictionary<string, object>(updates)
+          {
+            { "UsernamesHistory", newHistory },
+            { "UsernameLower", request.Username.TrimStart('@').ToLowerInvariant() }
+          };
+
+          if (!string.IsNullOrEmpty(request.DisplayName))
+            usernameUpdates["DisplayName"] = request.DisplayName;
+          if (request.Bio != null)
+            usernameUpdates["Bio"] = request.Bio;
+          if (request.IsPublic.HasValue)
+            usernameUpdates["IsPublic"] = request.IsPublic.Value;
+
+          transaction.Update(profileRef, usernameUpdates);
         });
 
-        // Deactivate old alias
-        var oldAlias = profile.UsernamesHistory[0];
-        if (!string.IsNullOrEmpty(oldAlias))
-        {
-          var oldAliasRef = _db.Collection("usernames").Document(oldAlias);
-          await oldAliasRef.UpdateAsync(new Dictionary<string, object> { { "IsActive", false } });
-        }
+        if (transactionError != null)
+          return (null, transactionError);
+      }
+      else
+      {
+        if (!string.IsNullOrEmpty(request.DisplayName))
+          updates["DisplayName"] = request.DisplayName;
+        if (request.Bio != null)
+          updates["Bio"] = request.Bio;
+        if (request.IsPublic.HasValue)
+          updates["IsPublic"] = request.IsPublic.Value;
+
+        await profileRef.UpdateAsync(updates);
       }
 
-      if (!string.IsNullOrEmpty(request.DisplayName))
-        updates["DisplayName"] = request.DisplayName;
-
-      if (request.Bio != null)
-        updates["Bio"] = request.Bio;
-
-      if (request.IsPublic.HasValue)
-        updates["IsPublic"] = request.IsPublic.Value;
-
-      await profileRef.UpdateAsync(updates);
-
-      // Fetch updated profile
       var updatedSnap = await profileRef.GetSnapshotAsync();
       return (updatedSnap.ConvertTo<UserProfile>(), null);
+    }
+
+    public async Task<(bool Success, string Error)> DeleteAsync(string persistentId, string ownerUid)
+    {
+      var profileRef = _db.Collection("userProfiles").Document(persistentId);
+      var profileSnap = await profileRef.GetSnapshotAsync();
+      if (!profileSnap.Exists)
+        return (false, "Profile not found");
+
+      var profile = profileSnap.ConvertTo<UserProfile>();
+      if (profile.OwnerUid != ownerUid)
+        return (false, "You can only delete your own profile");
+
+      // Delete posts
+      await DeleteCollectionBatchAsync("posts", "userId", persistentId);
+
+      // Delete collections
+      await DeleteCollectionBatchAsync("collections", "userId", persistentId);
+
+      // Delete follow relationships (follower or following)
+      await DeleteCollectionBatchAsync("follows", "followerId", persistentId);
+      await DeleteCollectionBatchAsync("follows", "followingId", persistentId);
+
+      // Deactivate all username mappings
+      if (profile.UsernamesHistory != null)
+      {
+        var batch = _db.StartBatch();
+        foreach (var username in profile.UsernamesHistory)
+        {
+          if (!string.IsNullOrEmpty(username))
+          {
+            var aliasRef = _db.Collection("usernames").Document(username);
+            batch.Update(aliasRef, new Dictionary<string, object> { { "IsActive", false } });
+          }
+        }
+        await batch.CommitAsync();
+      }
+
+      // Delete the profile itself
+      await profileRef.DeleteAsync();
+
+      return (true, null);
     }
 
     public async Task<List<UserProfile>> SearchByUsernameAsync(string query)
@@ -201,7 +274,7 @@ namespace Backend.Services
 
       var normalized = query.TrimStart('@').ToLowerInvariant();
       _logger.LogInformation("SearchByUsername: query='{Query}', normalized='{Normalized}'", query, normalized);
-      var upperBound = normalized + "";
+      var upperBound = normalized + "";
 
       var snapshot = await _db.Collection("userProfiles")
           .WhereGreaterThanOrEqualTo("UsernameLower", normalized)
@@ -217,6 +290,28 @@ namespace Backend.Services
         _logger.LogInformation("SearchByUsername: found profile PersistentId={Id}, UsernameLower='{UsernameLower}'", r.PersistentId, r.UsernameLower);
 
       return results;
+    }
+
+    private async Task DeleteCollectionBatchAsync(string collection, string field, string value)
+    {
+      const int batchSize = 400;
+      while (true)
+      {
+        var snapshot = await _db.Collection(collection)
+            .WhereEqualTo(field, value)
+            .Limit(batchSize)
+            .GetSnapshotAsync();
+
+        if (snapshot.Documents.Count == 0) break;
+
+        var batch = _db.StartBatch();
+        foreach (var doc in snapshot.Documents)
+          batch.Delete(doc.Reference);
+
+        await batch.CommitAsync();
+
+        if (snapshot.Documents.Count < batchSize) break;
+      }
     }
   }
 }

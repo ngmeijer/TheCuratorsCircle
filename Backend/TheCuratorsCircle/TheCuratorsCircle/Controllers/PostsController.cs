@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using TheCuratorsCircle.Clients;
+using TheCuratorsCircle.Models;
 using TheCuratorsCircle.Models.Content;
 using Backend.Services;
 using Backend.Models.Profiles;
@@ -24,7 +25,7 @@ public class PostsController : ControllerBase
     private readonly IFollowService _followService;
 
     public PostsController(
-        FirestoreClient firestore, 
+        FirestoreClient firestore,
         ILogger<PostsController> logger,
         IUserProfileService profileService,
         IFollowService followService)
@@ -40,6 +41,9 @@ public class PostsController : ControllerBase
         return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
+    private IActionResult ApiError(int statusCode, string error, string? code = null)
+        => StatusCode(statusCode, new ApiErrorResponse { Error = error, Code = code });
+
     [HttpPost]
     [Authorize]
     [EnableRateLimiting("write")]
@@ -50,14 +54,14 @@ public class PostsController : ControllerBase
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("CreatePost validation failed");
-            return BadRequest(new { message = "Invalid data. Title, mediaType, mediaId, and collectionId are required." });
+            return BadRequest(new ApiErrorResponse { Error = "Invalid data. Title, mediaType, mediaId, and collectionId are required." });
         }
 
         var firebaseUid = GetCurrentUserId();
         var profile = await _profileService.GetByOwnerUidAsync(firebaseUid);
-        
+
         if (profile == null)
-            return Unauthorized(new { error = "Profile not found" });
+            return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
         var userId = profile.PersistentId;
 
@@ -79,23 +83,22 @@ public class PostsController : ControllerBase
         var postsRef = _firestore.Database.Collection("posts");
         await postsRef.Document(post.Id).SetAsync(post);
 
-        // Update collection's itemIds
         try
         {
             var collectionRef = _firestore.Database.Collection("collections").Document(request.CollectionId);
             var collectionDoc = await collectionRef.GetSnapshotAsync();
-            
+
             if (collectionDoc.Exists)
             {
                 var collection = collectionDoc.ConvertTo<CollectionEntity>();
                 var itemIdsList = collection.ItemIds?.ToList() ?? new List<string>();
                 itemIdsList.Add(post.Id);
-                
+
                 await collectionRef.UpdateAsync(new Dictionary<string, object>
                 {
                     { "itemIds", itemIdsList }
                 });
-                
+
                 _logger.LogInformation("Updated collection {CollectionId} with new post {PostId}", request.CollectionId, post.Id);
             }
             else
@@ -135,15 +138,15 @@ public class PostsController : ControllerBase
         try
         {
             _logger.LogInformation("GetFeed request received with startAfter={StartAfter}, limit={Limit}", startAfter, limit);
-            
+
             var firebaseUid = GetCurrentUserId();
             var currentProfile = await _profileService.GetByOwnerUidAsync(firebaseUid);
-            
+
             if (currentProfile == null)
-                return Unauthorized(new { error = "Profile not found" });
+                return Unauthorized(new ApiErrorResponse { Error = "Profile not found" });
 
             var following = await _followService.GetFollowingAsync(currentProfile.PersistentId);
-            
+
             if (following.Count == 0)
             {
                 return Ok(new { posts = new List<PostWithProfile>(), hasMore = false, nextCursor = (string?)null });
@@ -151,12 +154,10 @@ public class PostsController : ControllerBase
 
             var followingIds = following.Select(p => p.PersistentId).ToList();
 
-            // Build base query
             var baseQuery = _firestore.Database.Collection("posts")
                 .WhereIn("userId", followingIds)
                 .OrderByDescending("createdAt");
 
-            // Add cursor filter if provided
             Query query;
             if (!string.IsNullOrEmpty(startAfter))
             {
@@ -182,7 +183,6 @@ public class PostsController : ControllerBase
 
             var hasMore = posts.Count == limit;
 
-            // Batch fetch all relevant profiles
             var userIds = posts.Select(p => p.UserId).Distinct().ToList();
             var docRefs = userIds.Select(id => _firestore.Database.Collection("userProfiles").Document(id)).ToList();
             var snapshots = await _firestore.Database.GetAllSnapshotsAsync(docRefs);
@@ -204,7 +204,7 @@ public class PostsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in GetFeed");
-            return StatusCode(500, new { error = ex.Message });
+            return ApiError(500, ex.Message);
         }
     }
 
@@ -212,14 +212,14 @@ public class PostsController : ControllerBase
     public async Task<IActionResult> GetPost(string postId)
     {
         _logger.LogInformation("GetPost request received - PostId: {PostId}", postId);
-        
+
         var docRef = _firestore.Database.Collection("posts").Document(postId);
         var doc = await docRef.GetSnapshotAsync();
 
         if (!doc.Exists)
         {
             _logger.LogWarning("Post not found - PostId: {PostId}", postId);
-            return NotFound(new { message = "Post not found" });
+            return NotFound(new ApiErrorResponse { Error = "Post not found" });
         }
 
         var post = doc.ConvertTo<Post>();

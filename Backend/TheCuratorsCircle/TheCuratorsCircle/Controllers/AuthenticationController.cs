@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -26,71 +26,60 @@ public class AuthenticationController : ControllerBase
     public AuthenticationController(IConfiguration configuration)
     {
         _auth = FirebaseAuth.DefaultInstance;
-        _firebaseWebApiKey = configuration["Firebase:WebApiKey"] 
+        _firebaseWebApiKey = configuration["Firebase:WebApiKey"]
             ?? throw new InvalidOperationException("Firebase:WebApiKey not configured");
     }
+
+    private IActionResult ApiError(int statusCode, string error, string? code = null)
+        => StatusCode(statusCode, new ApiErrorResponse { Error = error, Code = code });
 
     [HttpPost("login")]
     [EnableRateLimiting("write")]
     public async Task<IActionResult> Login([FromBody]LoginRequest request)
     {
         if (!ModelState.IsValid)
-        {
-            return BadRequest(new { message = "Invalid data, and input fields cannot be empty."});
-        }
+            return BadRequest(new ApiErrorResponse { Error = "Invalid data, and input fields cannot be empty." });
 
         try
         {
             var idToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
 
             if (idToken == null)
-            {
-                return BadRequest(new { message = "Invalid credentials."});
-            }
+                return BadRequest(new ApiErrorResponse { Error = "Invalid credentials." });
 
-            return Ok(new
-            {
-                token = idToken
-            });
+            return Ok(new { token = idToken });
         }
         catch (Exception ex)
         {
-            return Unauthorized(new { message = ex.Message});
+            return Unauthorized(new ApiErrorResponse { Error = ex.Message });
         }
     }
-    
+
     [HttpPost("signup")]
     [EnableRateLimiting("write")]
     public async Task<IActionResult> Signup([FromBody]RegisterRequest request)
     {
         if (!ModelState.IsValid)
-        {
-            return BadRequest(new { message = "Invalid data, and input fields cannot be empty."});
-        }
+            return BadRequest(new ApiErrorResponse { Error = "Invalid data, and input fields cannot be empty." });
 
         try
         {
-            var userRecord = await _auth.CreateUserAsync(new UserRecordArgs(){Email = request.Email, Password = request.Password});
-            
+            var userRecord = await _auth.CreateUserAsync(new UserRecordArgs { Email = request.Email, Password = request.Password });
+
             var idToken = await VerifyCredentialsWithFirebase(request.Email, request.Password);
 
             if (idToken == null)
-            {
-                return StatusCode(500, new {message = "Account created but failed to log in."});
-            }
-            
-            return Ok(new
-            {
-                token = idToken
-            });
+                return ApiError(500, "Account created but failed to log in.");
+
+            return Ok(new { token = idToken });
         }
         catch (FirebaseAuthException ex) when (ex.AuthErrorCode == AuthErrorCode.EmailAlreadyExists)
         {
-            return Conflict(new { message = "Email already in use." });
+            return Conflict(new ApiErrorResponse { Error = "Email already in use." });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = ex.Message });
+            return ApiError(500, ex.Message);
         }
     }
 
