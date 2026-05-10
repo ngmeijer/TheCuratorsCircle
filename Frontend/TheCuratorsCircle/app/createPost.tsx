@@ -16,6 +16,7 @@ import {
 import { router, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { searchMedia, createPost, createCollection, getCollections, MediaCategory, MediaSearchResult, CreatePostPayload } from '@/api/databaseClient';
+import { MAX_POST_TITLE_LENGTH, MAX_POST_CAPTION_LENGTH, MAX_COLLECTION_NAME_LENGTH } from '@/api/constants';
 
 type Step = 'choose' | 'createCollection' | 'category' | 'search' | 'select' | 'pickCollection' | 'caption';
 
@@ -255,7 +256,7 @@ export default function CreatePost() {
                     placeholderTextColor="#888"
                     value={collectionName}
                     onChangeText={setCollectionName}
-                    maxLength={100}
+                    maxLength={MAX_COLLECTION_NAME_LENGTH}
                     autoFocus
                 />
                 <TouchableOpacity
@@ -434,7 +435,7 @@ export default function CreatePost() {
                     placeholderTextColor="#888"
                     value={title}
                     onChangeText={setTitle}
-                    maxLength={100}
+                    maxLength={MAX_POST_TITLE_LENGTH}
                 />
                 <Text style={styles.fieldLabel}>Caption (optional)</Text>
                 <TextInput
@@ -443,6 +444,7 @@ export default function CreatePost() {
                     placeholderTextColor="#888"
                     value={caption}
                     onChangeText={setCaption}
+                    maxLength={MAX_POST_CAPTION_LENGTH}
                     multiline
                     numberOfLines={4}
                     textAlignVertical="top"

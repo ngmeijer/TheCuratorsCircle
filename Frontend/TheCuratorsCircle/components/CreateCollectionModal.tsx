@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { createCollection } from '@/api/databaseClient';
+import { MAX_COLLECTION_NAME_LENGTH } from '@/api/constants';
 
 interface CreateCollectionModalProps {
     visible: boolean;
@@ -80,7 +81,7 @@ export default function CreateCollectionModal({ visible, onClose, onSuccess }: C
                                 setName(text);
                                 setError('');
                             }}
-                            maxLength={100}
+                            maxLength={MAX_COLLECTION_NAME_LENGTH}
                             autoFocus
                         />
 

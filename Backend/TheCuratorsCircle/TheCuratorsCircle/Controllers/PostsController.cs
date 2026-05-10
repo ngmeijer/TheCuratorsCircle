@@ -117,7 +117,7 @@ public class PostsController : ControllerBase
     {
         _logger.LogInformation("GetPosts request received - UserId filter: {UserId}", userId ?? "none");
 
-        var query = _firestore.Database.Collection("posts").OrderByDescending("createdAt").Limit(50);
+        var query = _firestore.Database.Collection("posts").OrderByDescending("createdAt").Limit(AppConstants.MaxPostsPerPage);
 
         if (!string.IsNullOrEmpty(userId))
             query = query.WhereEqualTo("userId", userId);
@@ -130,7 +130,7 @@ public class PostsController : ControllerBase
 
     [HttpGet("feed")]
     [Authorize]
-    public async Task<IActionResult> GetFeed([FromQuery] string? startAfter = null, [FromQuery] int limit = 20)
+    public async Task<IActionResult> GetFeed([FromQuery] string? startAfter = null, [FromQuery] int limit = AppConstants.DefaultFeedLimit)
     {
         try
         {
